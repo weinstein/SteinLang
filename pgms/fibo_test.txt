@@ -1,0 +1,68 @@
+stmt {
+  assign_stmt {
+    lhs {
+      var_exp {
+        name: "f"
+      }
+    }
+    rhs {
+      lambda_exp {
+        param {
+          name: "n"
+        }
+        body {
+          tern_exp {
+            if_exp {
+              bin_arith_exp {
+                lhs {
+                  func_app_exp {
+                    func { var_exp { name: "f" } }
+                    arg {
+                      bin_arith_exp {
+                        lhs { var_exp { name: "n" } }
+                        op: SUB
+                        rhs { lit_exp { int_val: 1 } }
+                      }
+                    }
+                  }
+                }
+                op: ADD
+                rhs {
+                  func_app_exp {
+                    func { var_exp { name: "f" } }
+                    arg {
+                      bin_arith_exp {
+                        lhs { var_exp { name: "n" } }
+                        op: SUB
+                        rhs { lit_exp { int_val: 2 } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            cond_exp {
+              bin_arith_exp {
+                lhs { var_exp { name: "n" } }
+                op: GE
+                rhs { lit_exp { int_val: 2 } }
+              }
+            }
+            else_exp {
+              var_exp { name: "n" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+stmt {
+  print_stmt {
+    func_app_exp {
+      func { var_exp { name: "f" } }
+      arg { lit_exp { int_val: 20 } }
+    }
+  }
+}

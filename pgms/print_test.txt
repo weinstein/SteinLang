@@ -1,0 +1,21 @@
+stmt {
+  assign_stmt {
+    lhs {
+      var_exp {
+        name: "x"
+      }
+    }
+    rhs {
+      lit_exp {
+        int_val: 12
+      }
+    }
+  }
+}
+stmt {
+  print_stmt {
+    var_exp {
+      name: "x"
+    }
+  }
+}
