@@ -1,5 +1,5 @@
-#ifndef _FILE_IO_H
-#define _FILE_IO_H
+#ifndef FILE_IO_H__
+#define FILE_IO_H__
 
 #include <fstream>
 #include <google/protobuf/text_format.h>
@@ -7,6 +7,8 @@
 #include <string>
 
 #include "proto/language.pb.h"
+
+namespace steinlang {
 
 std::string ReadFileToString(const std::string& fname) {
   std::stringstream buf;
@@ -21,4 +23,6 @@ language::Program ParseAsciiProgram(const std::string& fname) {
   return pgm;
 }
 
-#endif  // _FILE_IO_H
+}  // steinlang
+
+#endif  // FILE_IO_H__

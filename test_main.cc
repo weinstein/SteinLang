@@ -14,7 +14,7 @@ DEFINE_bool(debug_print_steps, false,
             "If true, print verbose evaluation state after each step. This "
             "slows down execution significantly.");
 
-namespace language {
+namespace steinlang {
 
 void DebugPrint(const EvalContext& ctx) {
   printf("================\n");
@@ -45,7 +45,8 @@ int evaluate(std::unique_ptr<Evaluator> evaluator) {
     }
     evaluator->Step();
     if (evaluator->ctx().output_size() > num_output_printed) {
-      printf("output: %s\n", evaluator->ctx().output(num_output_printed++).c_str());
+      printf("output: %s\n",
+             evaluator->ctx().output(num_output_printed++).c_str());
     }
     ++steps;
   }
@@ -60,14 +61,15 @@ void CtxFromFile(const std::string& fname, EvalContext* ctx) {
   }
 }
 
-}  // namespace language
+}  // namespace steinlang
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  language::PoolingArenaAllocator allocator;
-  language::EvalContext* ctx = allocator.AllocateEvalContext();
-  language::CtxFromFile(FLAGS_input_file, ctx);
-  std::unique_ptr<language::Evaluator> evaluator(new language::Evaluator(ctx, &allocator));
+  steinlang::PoolingArenaAllocator allocator;
+  steinlang::EvalContext* ctx = allocator.AllocateEvalContext();
+  steinlang::CtxFromFile(FLAGS_input_file, ctx);
+  std::unique_ptr<steinlang::Evaluator> evaluator(
+      new steinlang::Evaluator(ctx, &allocator));
   auto start = std::chrono::high_resolution_clock::now();
   int num_steps = evaluate(std::move(evaluator));
   auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -75,6 +77,6 @@ int main(int argc, char** argv) {
       std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
   printf("total num steps evaluated: %d\n", num_steps);
   printf("total time: %lld us\n", microseconds);
-  printf("avg: %f us / step\n", static_cast<float>(microseconds)/num_steps);
+  printf("avg: %f us / step\n", static_cast<float>(microseconds) / num_steps);
   return 0;
 }

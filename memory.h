@@ -1,5 +1,5 @@
-#ifndef _MEMORY_H
-#define _MEMORY_H
+#ifndef MEMORY_H__
+#define MEMORY_H__
 
 #include <google/protobuf/arena.h>
 #include <stdlib.h>
@@ -8,97 +8,79 @@
 
 #include "proto/language.pb.h"
 
-namespace language {
+namespace steinlang {
 
 template <typename T>
 class Pool {
-  public:
-    explicit Pool(google::protobuf::Arena* arena) : arena_(arena) {}
+ public:
+  explicit Pool(google::protobuf::Arena* arena) : arena_(arena) {}
 
-    void add(T* x) {
-      data_.push_back(x);
-    }
+  void add(T* x) { data_.push_back(x); }
 
-    T* remove() {
-      T* x = data_.back();
-      data_.pop_back();
-      x->Clear();
-      return x;
-    }
+  T* remove() {
+    T* x = data_.back();
+    data_.pop_back();
+    x->Clear();
+    return x;
+  }
 
-    T* create() {
-      return google::protobuf::Arena::CreateMessage<T>(arena_);
-    }
+  T* create() { return google::protobuf::Arena::CreateMessage<T>(arena_); }
 
-    bool empty() const {
-      return data_.empty();
-    }
+  bool empty() const { return data_.empty(); }
 
-    void clear() {
-      data_.clear();
-    }
+  void clear() { data_.clear(); }
 
-    size_t size() const {
-      return data_.size();
-    }
+  size_t size() const { return data_.size(); }
 
-  private:
-    std::vector<T*> data_;
-    google::protobuf::Arena* arena_;
+ private:
+  std::vector<T*> data_;
+  google::protobuf::Arena* arena_;
 };
 
 template <typename T>
 class PoolPtr {
-  public:
-    explicit PoolPtr(Pool<T>* pool) : x_(nullptr), pool_(pool) {}
-    PoolPtr(T* x, Pool<T>* pool) : x_(x), pool_(pool) {}
+ public:
+  explicit PoolPtr(Pool<T>* pool) : x_(nullptr), pool_(pool) {}
+  PoolPtr(T* x, Pool<T>* pool) : x_(x), pool_(pool) {}
 
-    ~PoolPtr() {
-      reset();
+  ~PoolPtr() { reset(); }
+
+  PoolPtr(const PoolPtr<T>&) = delete;
+  PoolPtr(PoolPtr<T>&& other) : x_(other.x_), pool_(other.pool_) {
+    other.x_ = nullptr;
+  }
+  PoolPtr& operator=(const PoolPtr<T>&) = delete;
+  PoolPtr& operator=(PoolPtr<T>&& other) {
+    x_ = other.x_;
+    pool_ = other.pool_;
+    other.x_ = nullptr;
+    return *this;
+  }
+
+  T* get() const { return x_; }
+
+  T* release() {
+    T* x = x_;
+    x_ = nullptr;
+    return x;
+  }
+
+  void reset(T* x) {
+    if (x_ != nullptr) {
+      pool_->add(x_);
     }
+    x_ = x;
+  }
 
-    PoolPtr(const PoolPtr<T>&) = delete;
-    PoolPtr(PoolPtr<T>&& other) : x_(other.x_), pool_(other.pool_) {
-      other.x_ = nullptr;
-    }
-    PoolPtr& operator=(const PoolPtr<T>&) = delete;
-    PoolPtr& operator=(PoolPtr<T>&& other) {
-      x_ = other.x_;
-      pool_ = other.pool_;
-      other.x_ = nullptr;
-      return *this;
-    }
+  void reset() { reset(nullptr); }
 
-    T* get() const { return x_; }
+  typename std::add_lvalue_reference<T>::type operator*() const { return *x_; }
 
-    T* release() {
-      T* x = x_;
-      x_ = nullptr;
-      return x;
-    }
+  T* operator->() const { return x_; }
 
-    void reset(T* x) {
-      if (x_ != nullptr) {
-        pool_->add(x_);
-      }
-      x_ = x;
-    }
-
-    void reset() {
-      reset(nullptr);
-    }
-
-    typename std::add_lvalue_reference<T>::type operator*() const {
-      return *x_;
-    }
-
-    T* operator->() const {
-      return x_;
-    }
-
-  private:
-    T* x_;
-    Pool<T>* pool_;
+ private:
+  T* x_;
+  Pool<T>* pool_;
 };
 
 template <typename T>
@@ -129,9 +111,7 @@ class PoolingArenaAllocator {
   PoolPtr<Result> WrapPoolPtr(Result* x) {
     return PoolPtr<Result>(x, &result_pool_);
   }
-  PoolPtr<Result> AllocateResult() {
-    return RemoveOrCreate(&result_pool_);
-  }
+  PoolPtr<Result> AllocateResult() { return RemoveOrCreate(&result_pool_); }
 
   PoolPtr<LocalContext> WrapPoolPtr(LocalContext* x) {
     return PoolPtr<LocalContext>(x, &local_ctx_pool_);
@@ -143,9 +123,7 @@ class PoolingArenaAllocator {
   PoolPtr<Literal> WrapPoolPtr(Literal* x) {
     return PoolPtr<Literal>(x, &literal_pool_);
   }
-  PoolPtr<Literal> AllocateLiteral() {
-    return RemoveOrCreate(&literal_pool_);
-  }
+  PoolPtr<Literal> AllocateLiteral() { return RemoveOrCreate(&literal_pool_); }
 
   PoolPtr<Computation> WrapPoolPtr(Computation* x) {
     return PoolPtr<Computation>(x, &comp_pool_);
@@ -187,9 +165,7 @@ class PoolingArenaAllocator {
     return free(ptr);
   }
 
-  static size_t allocated_size() {
-    return allocated_size_;
-  }
+  static size_t allocated_size() { return allocated_size_; }
 
  private:
   google::protobuf::ArenaOptions MakeArenaOptions();
@@ -205,6 +181,6 @@ class PoolingArenaAllocator {
   Pool<Expression> exp_pool_;
 };
 
-}  // namespace language
+}  // namespace steinlang
 
-#endif  // _MEMORY_H
+#endif  // MEMORY_H__

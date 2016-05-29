@@ -1,10 +1,10 @@
-#ifndef _LANGUAGE_EVALUATION_H
-#define _LANGUAGE_EVALUATION_H
+#ifndef LANGUAGE_EVALUATION_H__
+#define LANGUAGE_EVALUATION_H__
 
 #include "memory.h"
 #include "proto/language.pb.h"
 
-namespace language {
+namespace steinlang {
 
 class Evaluator {
  public:
@@ -77,9 +77,7 @@ class Evaluator {
         ctx_->mutable_cur_ctx()->mutable_result()->UnsafeArenaReleaseLast());
   }
 
-  void Output(const std::string& x) {
-    ctx_->add_output(x);
-  }
+  void Output(const std::string& x) { ctx_->add_output(x); }
 
   void SaveLocalContext();
   void RestoreLocalContext();
@@ -88,6 +86,6 @@ class Evaluator {
   PoolingArenaAllocator* allocator_;
 };
 
-}  // namespace language
+}  // namespace steinlang
 
-#endif  // _LANGUAGE_EVALUATION_H
+#endif  // LANGUAGE_EVALUATION_H__

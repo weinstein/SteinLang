@@ -7,7 +7,7 @@ DEFINE_int64(start_block_size, 256,
 DEFINE_int64(max_block_size, 8 * 1024,
              "Protobuf arena allocation max block size");
 
-namespace language {
+namespace steinlang {
 
 size_t PoolingArenaAllocator::allocated_size_ = 0;
 
@@ -52,7 +52,7 @@ void PoolingArenaAllocator::Copy(const Expression& exp, Expression* dst) {
       Copy(exp.lit_exp(), lit_dst.get());
       dst->unsafe_arena_set_allocated_lit_exp(lit_dst.release());
       break;
-    } 
+    }
     case Expression::kFuncAppExp:
       Copy(exp.func_app_exp(), dst->mutable_func_app_exp());
       break;
@@ -188,4 +188,4 @@ void PoolingArenaAllocator::Copy(const Closure& closure, Closure* dst) {
   *dst->mutable_env() = closure.env();
 }
 
-}  // namespace language
+}  // namespace steinlang

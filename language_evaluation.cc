@@ -10,7 +10,7 @@ DEFINE_int64(max_arena_allocation_usage, 64 * 1024 * 1024,
              "forcing an arena reset. Actual allocation may go over by the max "
              "block size.");
 
-namespace language {
+namespace steinlang {
 
 int Evaluator::Lookup(const std::string& var_name) {
   auto* env = ctx_->mutable_cur_ctx()->mutable_env();
@@ -381,4 +381,4 @@ void Evaluator::EvaluatePrint() {
   Output(v->ShortDebugString());
 }
 
-}  // namespace language
+}  // namespace steinlang

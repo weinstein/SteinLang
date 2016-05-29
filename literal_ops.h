@@ -1,11 +1,11 @@
-#ifndef _LITERAL_OPS_H
-#define _LITERAL_OPS_H
+#ifndef LITERAL_OPS_H__
+#define LITERAL_OPS_H__
 
 #include "proto/language.pb.h"
 
 #include <string>
 
-namespace language {
+namespace steinlang {
 
 void Neg(Literal* x);
 void BoolNot(Literal* x);
@@ -25,6 +25,6 @@ void CompareNe(Literal* x, Literal* y);
 void BoolAnd(Literal* x, Literal* y);
 void BoolOr(Literal* x, Literal* y);
 
-}  // namespace language
+}  // namespace steinlang
 
-#endif  // _LITERAL_OPS_H
+#endif  // LITERAL_OPS_H__
