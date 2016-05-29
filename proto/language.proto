@@ -1,0 +1,207 @@
+syntax = "proto3";
+
+package language;
+
+option cc_enable_arenas = true;
+
+message Variable {
+  string name = 1;
+}
+
+message Closure {
+  repeated Variable param = 1;
+  repeated Statement body = 2;
+  map<string, int64> env = 3;
+}
+
+message Tuple {
+  repeated Literal elem = 1;
+}
+
+message Literal {
+  oneof type {
+    bool none_val = 1;
+    bool bool_val = 2;
+    int64 int_val = 3;
+    float float_val = 4;
+    string str_val = 5;
+    Closure closure_val = 6;
+    Tuple tuple_val = 7;
+  }
+}
+
+enum MonArithOp {
+  NOT = 0;
+  NEG = 1;
+}
+
+enum BinArithOp {
+  ADD = 0;
+  SUB = 1;
+  MUL = 2;
+  DIV = 3;
+  GT = 4;
+  GE = 5;
+  LT = 6;
+  LE = 7;
+  EQ = 8;
+  NE = 9;
+  AND = 10;
+  OR = 11;
+}
+
+message BinArithExpression {
+  Expression lhs = 1;
+  BinArithOp op = 2;
+  Expression rhs = 3;
+}
+
+message MonArithExpression {
+  MonArithOp op = 1;
+  Expression exp = 2;
+}
+
+message FuncAppExpression {
+  Expression func = 1;
+  repeated Expression arg = 2;
+}
+
+message TernaryExpression {
+  Expression if_exp = 1;
+  Expression cond_exp = 2;
+  Expression else_exp = 3;
+}
+
+message TupleExpression {
+  repeated Expression exp = 1;
+}
+
+message LambdaExpression {
+  repeated Variable param = 1;
+  Expression body = 2;
+}
+
+message Expression {
+  oneof type {
+    Variable var_exp = 1;
+    Literal lit_exp = 2;
+    FuncAppExpression func_app_exp = 3;
+    MonArithExpression mon_arith_exp = 4;
+    BinArithExpression bin_arith_exp = 5;
+    TernaryExpression tern_exp = 6;
+    TupleExpression tuple_exp = 7;
+    LambdaExpression lambda_exp = 8;
+  }
+}
+
+message AssignStatement {
+  Expression lhs = 1;
+  Expression rhs = 2;
+}
+
+message Statement {
+  oneof type {
+    Expression exp_stmt = 1;
+    AssignStatement assign_stmt = 2;
+    Expression ret_stmt = 3;
+    Expression print_stmt = 4;
+  }
+}
+
+// The top-level Program. This defines the format in which programs are
+// serialized to storage/network.
+// Once a Program is parsed, it is never modified during evaluation.
+message Program {
+  repeated Statement stmt = 1;
+}
+
+// =============================================================================
+// Everything from here on pertains to dynamic program evaluation.
+
+message BinExpFinal {
+  BinArithOp op = 1;
+}
+
+message MonExpFinal {
+  MonArithOp op = 1;
+}
+
+message TupleExpFinal {
+  int64 size = 1;
+}
+
+message IgnoreOneResult {
+}
+
+message AssignStmtFinal {
+}
+
+message FuncAppExpFinal {
+  int64 num_args = 1;
+}
+
+message ReturnFromLocalContext {
+}
+
+message IfElseFinal {
+  Computation if_case = 1;
+  Computation else_case = 2;
+}
+
+message PrintFinal {
+}
+
+// A Computation represents something that can be evaluated (rewritten).
+// The final result of evaluation is a Result for Expressions, or nothing at all
+// for Statements, although both may result in side effects.
+message Computation {
+  oneof type {
+    Expression exp = 1;
+    Statement stmt = 2;
+
+    // These are generated as part of evaluation; they can't be part of a
+    // program and aren't valid expressions or statements.
+    BinExpFinal bin_exp_final = 3;
+    MonExpFinal mon_exp_final = 4;
+    TupleExpFinal tuple_exp_final = 5;
+    IgnoreOneResult ignore_one_result = 6;
+    AssignStmtFinal assign_stmt_final = 7;
+    FuncAppExpFinal func_app_exp_final = 8;
+    ReturnFromLocalContext return_from_ctx = 9;
+    IfElseFinal if_else_final = 10;
+    PrintFinal print_final = 11;
+  }
+}
+
+message Result {
+  oneof type {
+    Literal rvalue = 1;
+    int64 lvalue_ref = 2;
+  }
+}
+
+// Function-local evaluation context.
+// Functions won't share LocalContext. This is what forms the function stack.
+// Each has:
+//   a stack of computations to be evaluated,
+//   a stack of results of previous computations,
+//   the environment, a mapping from variable names to addresses in the store.
+message LocalContext {
+  repeated Computation comp = 1;
+  repeated Result result = 2;
+  map<string, int64> env = 3;
+}
+
+// The top-level evaluation context.
+// It is made up of:
+//   the original, unmodified program being evaluated,
+//   the store, a map of addresses to literal values (think: ram),
+//   standard output,
+//   one or more LocalContext items forming the function stack.
+message EvalContext {
+  Program pgm = 1;
+  repeated Literal store = 2;
+  repeated string output = 3;
+  LocalContext cur_ctx = 4;
+  repeated LocalContext saved_ctx = 5;
+}
