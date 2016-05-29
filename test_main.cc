@@ -1,3 +1,7 @@
+// test_main evaluates ASCII text format protobuf programs.
+// Example usage:
+//   test_main --input_file=pgms/fibo_text.txt
+
 #include <chrono>
 #include <gflags/gflags.h>
 #include <stdio.h>

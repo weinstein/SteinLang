@@ -6,8 +6,18 @@
 
 namespace steinlang {
 
+// Evaluator handles dynamic evaluation of an EvalContext, step by step.
+// Example evaluation loop:
+// 
+// PoolingArenaAllocator allocator;
+// EvalContext* ctx = allocator.AllocateEvalContext();
+// Evaluator evaluator(ctx, &allocator);
+// while (evaluator.HasComputation()) {
+//   evaluator.Step();
+// }
 class Evaluator {
  public:
+  // ctx must be arena-allocated by allocator.
   Evaluator(EvalContext* ctx, PoolingArenaAllocator* allocator)
       : ctx_(ctx), allocator_(allocator) {}
 

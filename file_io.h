@@ -1,3 +1,5 @@
+// Some quick and dirty utils for reading data from files.
+
 #ifndef FILE_IO_H__
 #define FILE_IO_H__
 
@@ -16,10 +18,14 @@ std::string ReadFileToString(const std::string& fname) {
   return buf.str();
 }
 
-language::Program ParseAsciiProgram(const std::string& fname) {
-  const std::string pgm_txt = ReadFileToString(fname);
-  language::Program pgm;
-  google::protobuf::TextFormat::ParseFromString(pgm_txt, &pgm);
+void ParseAsciiMessage(const std::string& fname, google::protobuf::Message* msg) {
+  const std::string txt = ReadFileToString(fname);
+  google::protobuf::TextFormat::ParseFromString(txt, msg);
+}
+
+steinlang::Program ParseAsciiProgram(const std::string& fname) {
+  steinlang::Program pgm;
+  ParseAsciiMessage(fname, &pgm);
   return pgm;
 }
 
