@@ -1,7 +1,7 @@
 #ifndef LANGUAGE_EVALUATION_H__
 #define LANGUAGE_EVALUATION_H__
 
-#include "memory.h"
+#include "interpreter/memory.h"
 #include "proto/language.pb.h"
 
 namespace steinlang {

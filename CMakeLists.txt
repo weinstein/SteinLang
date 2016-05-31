@@ -6,5 +6,5 @@ find_package(GFlags REQUIRED)
 
 add_subdirectory(proto)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_executable(bin/test_main test_main.cc language_evaluation.cc literal_ops.cc memory.cc)
+add_executable(bin/test_main interpreter/test_main.cc interpreter/language_evaluation.cc interpreter/literal_ops.cc interpreter/memory.cc)
 target_link_libraries(bin/test_main gflags language_proto ${PROTOBUF_LIBRARY})

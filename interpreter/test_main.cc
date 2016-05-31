@@ -6,9 +6,9 @@
 #include <gflags/gflags.h>
 #include <stdio.h>
 
-#include "file_io.h"
-#include "language_evaluation.h"
-#include "map_util.h"
+#include "interpreter/language_evaluation.h"
+#include "util/file_io.h"
+#include "util/map_util.h"
 
 DEFINE_string(
     input_file, "input.txt",

@@ -2,8 +2,8 @@
 
 #include <gflags/gflags.h>
 
-#include "literal_ops.h"
-#include "map_util.h"
+#include "interpreter/literal_ops.h"
+#include "util/map_util.h"
 
 DEFINE_int64(max_arena_allocation_usage, 64 * 1024 * 1024,
              "Max memory allocated by protobuf arena before freeing memory by "

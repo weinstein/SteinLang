@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "interpreter/memory.h"
 
 #include <gflags/gflags.h>
 
