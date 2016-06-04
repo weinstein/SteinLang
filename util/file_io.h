@@ -1,7 +1,7 @@
 // Some quick and dirty utils for reading data from files.
 
-#ifndef FILE_IO_H__
-#define FILE_IO_H__
+#ifndef UTIL_FILE_IO_H_
+#define UTIL_FILE_IO_H_
 
 #include <fstream>
 #include <google/protobuf/text_format.h>
@@ -31,4 +31,4 @@ steinlang::Program ParseAsciiProgram(const std::string& fname) {
 
 }  // steinlang
 
-#endif  // FILE_IO_H__
+#endif  // UTIL_FILE_IO_H_

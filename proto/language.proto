@@ -4,6 +4,13 @@ package steinlang;
 
 option cc_enable_arenas = true;
 
+message Origin {
+  oneof origin {
+    int64 source_id = 20;
+    bool transient = 21;
+  }
+}
+
 message Variable {
   string name = 1;
 }
@@ -92,6 +99,7 @@ message Expression {
     TupleExpression tuple_exp = 7;
     LambdaExpression lambda_exp = 8;
   }
+  Origin origin = 20;
 }
 
 message AssignStatement {
@@ -106,6 +114,7 @@ message Statement {
     Expression ret_stmt = 3;
     Expression print_stmt = 4;
   }
+  Origin origin = 20;
 }
 
 // The top-level Program. This defines the format in which programs are

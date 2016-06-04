@@ -74,6 +74,7 @@ void PoolingArenaAllocator::Copy(const Expression& exp, Expression* dst) {
     case Expression::TYPE_NOT_SET:
       break;
   }
+  *dst->mutable_origin() = exp.origin();
 }
 
 void PoolingArenaAllocator::Copy(const FuncAppExpression& func_app_exp,
@@ -176,6 +177,7 @@ void PoolingArenaAllocator::Copy(const Statement& stmt, Statement* dst) {
     case Statement::TYPE_NOT_SET:
       break;
   }
+  *dst->mutable_origin() = stmt.origin();
 }
 
 void PoolingArenaAllocator::Copy(const Closure& closure, Closure* dst) {

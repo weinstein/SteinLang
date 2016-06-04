@@ -9,6 +9,7 @@
 #include "interpreter/language_evaluation.h"
 #include "util/file_io.h"
 #include "util/map_util.h"
+#include "util/source_util.h"
 
 DEFINE_string(
     input_file, "input.txt",
@@ -59,6 +60,7 @@ int evaluate(std::unique_ptr<Evaluator> evaluator) {
 
 void CtxFromFile(const std::string& fname, EvalContext* ctx) {
   Program pgm = ParseAsciiProgram(fname);
+  AnnotateSource(&pgm);
   *ctx->mutable_pgm() = pgm;
   for (int i = pgm.stmt_size(); i-- > 0;) {
     *ctx->mutable_cur_ctx()->add_comp()->mutable_stmt() = pgm.stmt(i);

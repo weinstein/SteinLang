@@ -1,8 +1,8 @@
 // Basic arithmetic operations on Literal values for MonArithExpression and
 // BinArithExpression evaluation.
 
-#ifndef LITERAL_OPS_H__
-#define LITERAL_OPS_H__
+#ifndef INTERPRETER_LITERAL_OPS_H_
+#define INTERPRETER_LITERAL_OPS_H_
 
 #include "proto/language.pb.h"
 
@@ -41,4 +41,4 @@ void BoolOr(Literal* x, Literal* y);
 
 }  // namespace steinlang
 
-#endif  // LITERAL_OPS_H__
+#endif  // INTERPRETER_LITERAL_OPS_H_

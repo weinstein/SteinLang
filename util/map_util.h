@@ -1,5 +1,5 @@
-#ifndef MAP_UTIL_H__
-#define MAP_UTIL_H__
+#ifndef UTIL_MAP_UTIL_H_
+#define UTIL_MAP_UTIL_H_
 
 namespace steinlang {
 
@@ -17,4 +17,4 @@ const typename MapTy::mapped_type& FindOrDie(
 
 }  // namespace steinlang
 
-#endif  // MAP_UTIL_H__
+#endif  // UTIL_MAP_UTIL_H_
