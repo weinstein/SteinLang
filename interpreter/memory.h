@@ -116,7 +116,7 @@ class PoolPtr {
 // one from the pool and return it.
 // Otherwise, create a new one on the pool's arena and return it.
 template <typename T>
-static PoolPtr<T> RemoveOrCreate(Pool<T>* pool) {
+PoolPtr<T> RemoveOrCreate(Pool<T>* pool) {
   T* x = pool->empty() ? pool->create() : pool->remove();
   return PoolPtr<T>(x, pool);
 }
