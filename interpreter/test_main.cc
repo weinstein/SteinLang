@@ -12,7 +12,7 @@
 #include "util/source_util.h"
 
 DEFINE_string(
-    input_file, "input.txt",
+    input_file, "",
     "ASCII text format Program protobuf to run. See proto/language.proto.");
 
 DEFINE_bool(debug_print_steps, false,

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(language)
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
+set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -pthread -O3")
 
+find_package(Threads REQUIRED)
 find_package(GFlags REQUIRED)
 
 add_subdirectory(proto)
@@ -10,5 +11,5 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(source_util util/source_util.h util/source_util.cc)
 target_link_libraries(source_util language_proto ${PROTOBUF_LIBRARY})
 
-add_executable(bin/test_main interpreter/test_main.cc interpreter/language_evaluation.cc interpreter/literal_ops.cc interpreter/memory.cc)
-target_link_libraries(bin/test_main language_proto source_util gflags ${PROTOBUF_LIBRARY})
+add_executable(bin/test_main interpreter/test_main.cc interpreter/memory.cc interpreter/literal_ops.cc interpreter/language_evaluation.cc)
+target_link_libraries(bin/test_main language_proto source_util gflags ${PROTOBUF_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})

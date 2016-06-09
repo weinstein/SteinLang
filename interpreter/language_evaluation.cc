@@ -17,7 +17,7 @@ int Evaluator::Lookup(const std::string& var_name) {
   auto it = env->find(var_name);
   if (it == env->end()) {
     int new_addr = (*env)[var_name] = ctx_->store_size();
-    PoolPtr<Literal> new_val = allocator_->AllocateLiteral();
+    PoolPtr<Literal> new_val = allocator_->Allocate<Literal>();
     ctx_->mutable_store()->UnsafeArenaAddAllocated(new_val.release());
     return new_addr;
   } else {
@@ -97,12 +97,12 @@ PoolPtr<Literal> Evaluator::ValueOf(PoolPtr<Result> result) {
     case Result::kRvalue:
       return allocator_->WrapPoolPtr(result->unsafe_arena_release_rvalue());
     case Result::kLvalueRef: {
-      PoolPtr<Literal> lit = allocator_->AllocateLiteral();
+      PoolPtr<Literal> lit = allocator_->Allocate<Literal>();
       allocator_->Copy(ctx_->store(result->lvalue_ref()), lit.get());
       return lit;
     }
     case Result::TYPE_NOT_SET:
-      return allocator_->AllocateLiteral();
+      return allocator_->Allocate<Literal>();
   }
 }
 
@@ -113,7 +113,7 @@ const Literal& Evaluator::ValueOf(const Result& result) {
     case Result::kLvalueRef:
       return ctx_->store(result.lvalue_ref());
     case Result::TYPE_NOT_SET:
-      return *allocator_->AllocateLiteral();
+      return *allocator_->Allocate<Literal>();
   }
 }
 
@@ -121,7 +121,7 @@ void Evaluator::SaveLocalContext() {
   ctx_->mutable_saved_ctx()->UnsafeArenaAddAllocated(
       ctx_->unsafe_arena_release_cur_ctx());
   ctx_->unsafe_arena_set_allocated_cur_ctx(
-      allocator_->AllocateLocalContext().release());
+      allocator_->Allocate<LocalContext>().release());
 }
 
 void Evaluator::RestoreLocalContext() {
@@ -309,11 +309,11 @@ void Evaluator::EvaluateAssignStmtFinal() {
 
 void Evaluator::Evaluate(TernaryExpression* tern_exp) {
   IfElseFinal* fnl = Schedule()->mutable_if_else_final();
-  PoolPtr<Computation> if_comp = allocator_->AllocateComputation();
+  PoolPtr<Computation> if_comp = allocator_->Allocate<Computation>();
   if_comp->unsafe_arena_set_allocated_exp(
       tern_exp->unsafe_arena_release_if_exp());
   fnl->unsafe_arena_set_allocated_if_case(if_comp.release());
-  PoolPtr<Computation> else_comp = allocator_->AllocateComputation();
+  PoolPtr<Computation> else_comp = allocator_->Allocate<Computation>();
   else_comp->unsafe_arena_set_allocated_exp(
       tern_exp->unsafe_arena_release_else_exp());
   fnl->unsafe_arena_set_allocated_else_case(else_comp.release());

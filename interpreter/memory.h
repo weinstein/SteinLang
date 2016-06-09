@@ -6,6 +6,7 @@
 #include <google/protobuf/arena.h>
 #include <stdlib.h>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "proto/language.pb.h"
@@ -112,14 +113,29 @@ class PoolPtr {
   Pool<T>* pool_;
 };
 
+// Like a std::tuple<Pool<T1>, Pool<T2>, ...>
+template <typename... Ts>
+class PoolTuple {
+ public:
+   // Pass the same arena to all constructors, for convenience.
+   explicit PoolTuple(google::protobuf::Arena* arena)
+     : pools_(Pool<Ts>(arena)...) {}
+
+   // Get the pool for type T.
+   template <typename T>
+   Pool<T>* get() {
+     // C++14 tuple access by mapped type.
+     // Static assertions require exactly one pool to match T.
+     return &(std::get<Pool<T>>(pools_));
+   }
+
+ private:
+   std::tuple<Pool<Ts>...> pools_;
+};
+
 // If the pool can return a fresh pointer without a new arena allocation, remove
 // one from the pool and return it.
 // Otherwise, create a new one on the pool's arena and return it.
-template <typename T>
-PoolPtr<T> RemoveOrCreate(Pool<T>* pool) {
-  T* x = pool->empty() ? pool->create() : pool->remove();
-  return PoolPtr<T>(x, pool);
-}
 
 // PoolingArenaAllocator owns a proto arena for allocating messages, and owns
 // message pools. It exposes methods for creating PoolPtr's for pooled types,
@@ -128,53 +144,30 @@ class PoolingArenaAllocator {
  public:
   PoolingArenaAllocator()
       : arena_(MakeArenaOptions()),
-        result_pool_(&arena_),
-        local_ctx_pool_(&arena_),
-        literal_pool_(&arena_),
-        comp_pool_(&arena_),
-        exp_pool_(&arena_) {}
+        pools_(&arena_) {}
 
   // Reset the arena and clear the pools.
   // After a call to Reset(), all pointers previously returned by this allocator
   // will be deleted and invalidated.
   void Reset() {
-    result_pool_.clear();
-    local_ctx_pool_.clear();
-    literal_pool_.clear();
-    comp_pool_.clear();
-    exp_pool_.clear();
+    pools_.get<Result>()->clear();
+    pools_.get<LocalContext>()->clear();
+    pools_.get<Literal>()->clear();
+    pools_.get<Computation>()->clear();
+    pools_.get<Expression>()->clear();
     arena_.Reset();
   }
 
-  PoolPtr<Result> WrapPoolPtr(Result* x) {
-    return PoolPtr<Result>(x, &result_pool_);
-  }
-  PoolPtr<Result> AllocateResult() { return RemoveOrCreate(&result_pool_); }
-
-  PoolPtr<LocalContext> WrapPoolPtr(LocalContext* x) {
-    return PoolPtr<LocalContext>(x, &local_ctx_pool_);
-  }
-  PoolPtr<LocalContext> AllocateLocalContext() {
-    return RemoveOrCreate(&local_ctx_pool_);
+  template <typename T>
+  PoolPtr<T> WrapPoolPtr(T* x) {
+    return PoolPtr<T>(x, pools_.get<T>());
   }
 
-  PoolPtr<Literal> WrapPoolPtr(Literal* x) {
-    return PoolPtr<Literal>(x, &literal_pool_);
-  }
-  PoolPtr<Literal> AllocateLiteral() { return RemoveOrCreate(&literal_pool_); }
-
-  PoolPtr<Computation> WrapPoolPtr(Computation* x) {
-    return PoolPtr<Computation>(x, &comp_pool_);
-  }
-  PoolPtr<Computation> AllocateComputation() {
-    return RemoveOrCreate(&comp_pool_);
-  }
-
-  PoolPtr<Expression> WrapPoolPtr(Expression* x) {
-    return PoolPtr<Expression>(x, &exp_pool_);
-  }
-  PoolPtr<Expression> AllocateExpression() {
-    return RemoveOrCreate(&exp_pool_);
+  template <typename T>
+  PoolPtr<T> Allocate() {
+    Pool<T>* pool = pools_.get<T>();
+    T* x = pool->empty() ? pool->create() : pool->remove();
+    return PoolPtr<T>(x, pool);
   }
 
   // Deep copy helpers for important steinlang message types.
@@ -221,11 +214,9 @@ class PoolingArenaAllocator {
 
   static size_t allocated_size_;
 
-  Pool<Result> result_pool_;
-  Pool<LocalContext> local_ctx_pool_;
-  Pool<Literal> literal_pool_;
-  Pool<Computation> comp_pool_;
-  Pool<Expression> exp_pool_;
+  // Template magic makes adding a new poolable type as easy as adding it to the
+  // list of template arguments here.
+  PoolTuple<Result, LocalContext, Literal, Computation, Expression> pools_;
 };
 
 }  // namespace steinlang

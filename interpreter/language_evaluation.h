@@ -64,13 +64,13 @@ class Evaluator {
   void EvaluatePrint();
 
   Computation* Schedule() {
-    Computation* new_comp = allocator_->AllocateComputation().release();
+    Computation* new_comp = allocator_->Allocate<Computation>().release();
     ctx_->mutable_cur_ctx()->mutable_comp()->UnsafeArenaAddAllocated(new_comp);
     return new_comp;
   }
 
   Result* AddResult() {
-    Result* result = allocator_->AllocateResult().release();
+    Result* result = allocator_->Allocate<Result>().release();
     ctx_->mutable_cur_ctx()->mutable_result()->UnsafeArenaAddAllocated(result);
     return result;
   }

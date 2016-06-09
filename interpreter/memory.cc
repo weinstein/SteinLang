@@ -22,7 +22,7 @@ google::protobuf::ArenaOptions PoolingArenaAllocator::MakeArenaOptions() {
 
 void PoolingArenaAllocator::Copy(const Tuple& tuple, Tuple* dst) {
   for (const Literal& lit : tuple.elem()) {
-    PoolPtr<Literal> lit_dst = AllocateLiteral();
+    PoolPtr<Literal> lit_dst = Allocate<Literal>();
     Copy(lit, lit_dst.get());
     dst->mutable_elem()->UnsafeArenaAddAllocated(lit_dst.release());
   }
@@ -48,7 +48,7 @@ void PoolingArenaAllocator::Copy(const Expression& exp, Expression* dst) {
       *dst->mutable_var_exp() = exp.var_exp();
       break;
     case Expression::kLitExp: {
-      PoolPtr<Literal> lit_dst = AllocateLiteral();
+      PoolPtr<Literal> lit_dst = Allocate<Literal>();
       Copy(exp.lit_exp(), lit_dst.get());
       dst->unsafe_arena_set_allocated_lit_exp(lit_dst.release());
       break;
@@ -79,12 +79,12 @@ void PoolingArenaAllocator::Copy(const Expression& exp, Expression* dst) {
 
 void PoolingArenaAllocator::Copy(const FuncAppExpression& func_app_exp,
                                  FuncAppExpression* dst) {
-  PoolPtr<Expression> func_dst = AllocateExpression();
+  PoolPtr<Expression> func_dst = Allocate<Expression>();
   Copy(func_app_exp.func(), func_dst.get());
   dst->unsafe_arena_set_allocated_func(func_dst.release());
 
   for (const Expression& e : func_app_exp.arg()) {
-    PoolPtr<Expression> arg_dst = AllocateExpression();
+    PoolPtr<Expression> arg_dst = Allocate<Expression>();
     Copy(e, arg_dst.get());
     dst->mutable_arg()->UnsafeArenaAddAllocated(arg_dst.release());
   }
@@ -93,7 +93,7 @@ void PoolingArenaAllocator::Copy(const FuncAppExpression& func_app_exp,
 void PoolingArenaAllocator::Copy(const MonArithExpression& mon_arith_exp,
                                  MonArithExpression* dst) {
   dst->set_op(mon_arith_exp.op());
-  PoolPtr<Expression> exp_dst = AllocateExpression();
+  PoolPtr<Expression> exp_dst = Allocate<Expression>();
   Copy(mon_arith_exp.exp(), exp_dst.get());
   dst->unsafe_arena_set_allocated_exp(exp_dst.release());
 }
@@ -102,26 +102,26 @@ void PoolingArenaAllocator::Copy(const BinArithExpression& bin_arith_exp,
                                  BinArithExpression* dst) {
   dst->set_op(bin_arith_exp.op());
 
-  PoolPtr<Expression> lhs_dst = AllocateExpression();
+  PoolPtr<Expression> lhs_dst = Allocate<Expression>();
   Copy(bin_arith_exp.lhs(), lhs_dst.get());
   dst->unsafe_arena_set_allocated_lhs(lhs_dst.release());
 
-  PoolPtr<Expression> rhs_dst = AllocateExpression();
+  PoolPtr<Expression> rhs_dst = Allocate<Expression>();
   Copy(bin_arith_exp.rhs(), rhs_dst.get());
   dst->unsafe_arena_set_allocated_rhs(rhs_dst.release());
 }
 
 void PoolingArenaAllocator::Copy(const TernaryExpression& tern_exp,
                                  TernaryExpression* dst) {
-  PoolPtr<Expression> if_dst = AllocateExpression();
+  PoolPtr<Expression> if_dst = Allocate<Expression>();
   Copy(tern_exp.if_exp(), if_dst.get());
   dst->unsafe_arena_set_allocated_if_exp(if_dst.release());
 
-  PoolPtr<Expression> cond_dst = AllocateExpression();
+  PoolPtr<Expression> cond_dst = Allocate<Expression>();
   Copy(tern_exp.cond_exp(), cond_dst.get());
   dst->unsafe_arena_set_allocated_cond_exp(cond_dst.release());
 
-  PoolPtr<Expression> else_dst = AllocateExpression();
+  PoolPtr<Expression> else_dst = Allocate<Expression>();
   Copy(tern_exp.else_exp(), else_dst.get());
   dst->unsafe_arena_set_allocated_else_exp(else_dst.release());
 }
@@ -129,7 +129,7 @@ void PoolingArenaAllocator::Copy(const TernaryExpression& tern_exp,
 void PoolingArenaAllocator::Copy(const TupleExpression& tuple_exp,
                                  TupleExpression* dst) {
   for (const Expression& e : tuple_exp.exp()) {
-    PoolPtr<Expression> exp_dst = AllocateExpression();
+    PoolPtr<Expression> exp_dst = Allocate<Expression>();
     Copy(e, exp_dst.get());
     dst->mutable_exp()->UnsafeArenaAddAllocated(exp_dst.release());
   }
@@ -138,7 +138,7 @@ void PoolingArenaAllocator::Copy(const TupleExpression& tuple_exp,
 void PoolingArenaAllocator::Copy(const LambdaExpression& lambda_exp,
                                  LambdaExpression* dst) {
   *dst->mutable_param() = lambda_exp.param();
-  PoolPtr<Expression> body_dst = AllocateExpression();
+  PoolPtr<Expression> body_dst = Allocate<Expression>();
   Copy(lambda_exp.body(), body_dst.get());
   dst->unsafe_arena_set_allocated_body(body_dst.release());
 }
@@ -146,30 +146,30 @@ void PoolingArenaAllocator::Copy(const LambdaExpression& lambda_exp,
 void PoolingArenaAllocator::Copy(const Statement& stmt, Statement* dst) {
   switch (stmt.type_case()) {
     case Statement::kExpStmt: {
-      PoolPtr<Expression> exp_dst = AllocateExpression();
+      PoolPtr<Expression> exp_dst = Allocate<Expression>();
       Copy(stmt.exp_stmt(), exp_dst.get());
       dst->unsafe_arena_set_allocated_exp_stmt(exp_dst.release());
       break;
     }
     case Statement::kAssignStmt: {
-      PoolPtr<Expression> lhs_dst = AllocateExpression();
+      PoolPtr<Expression> lhs_dst = Allocate<Expression>();
       Copy(stmt.assign_stmt().lhs(), lhs_dst.get());
       dst->mutable_assign_stmt()->unsafe_arena_set_allocated_lhs(
           lhs_dst.release());
-      PoolPtr<Expression> rhs_dst = AllocateExpression();
+      PoolPtr<Expression> rhs_dst = Allocate<Expression>();
       Copy(stmt.assign_stmt().rhs(), rhs_dst.get());
       dst->mutable_assign_stmt()->unsafe_arena_set_allocated_rhs(
           rhs_dst.release());
       break;
     }
     case Statement::kRetStmt: {
-      PoolPtr<Expression> exp_dst = AllocateExpression();
+      PoolPtr<Expression> exp_dst = Allocate<Expression>();
       Copy(stmt.ret_stmt(), exp_dst.get());
       dst->unsafe_arena_set_allocated_ret_stmt(exp_dst.release());
       break;
     }
     case Statement::kPrintStmt: {
-      PoolPtr<Expression> exp_dst = AllocateExpression();
+      PoolPtr<Expression> exp_dst = Allocate<Expression>();
       Copy(stmt.print_stmt(), exp_dst.get());
       dst->unsafe_arena_set_allocated_print_stmt(exp_dst.release());
       break;
