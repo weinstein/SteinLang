@@ -117,20 +117,20 @@ class PoolPtr {
 template <typename... Ts>
 class PoolTuple {
  public:
-   // Pass the same arena to all constructors, for convenience.
-   explicit PoolTuple(google::protobuf::Arena* arena)
-     : pools_(Pool<Ts>(arena)...) {}
+  // Pass the same arena to all constructors, for convenience.
+  explicit PoolTuple(google::protobuf::Arena* arena)
+      : pools_(Pool<Ts>(arena)...) {}
 
-   // Get the pool for type T.
-   template <typename T>
-   Pool<T>* get() {
-     // C++14 tuple access by mapped type.
-     // Static assertions require exactly one pool to match T.
-     return &(std::get<Pool<T>>(pools_));
-   }
+  // Get the pool for type T.
+  template <typename T>
+  Pool<T>* get() {
+    // C++14 tuple access by mapped type.
+    // Static assertions require exactly one pool to match T.
+    return &(std::get<Pool<T>>(pools_));
+  }
 
  private:
-   std::tuple<Pool<Ts>...> pools_;
+  std::tuple<Pool<Ts>...> pools_;
 };
 
 // If the pool can return a fresh pointer without a new arena allocation, remove
@@ -142,9 +142,7 @@ class PoolTuple {
 // and doing protobuf deep copies with pooling.
 class PoolingArenaAllocator {
  public:
-  PoolingArenaAllocator()
-      : arena_(MakeArenaOptions()),
-        pools_(&arena_) {}
+  PoolingArenaAllocator() : arena_(MakeArenaOptions()), pools_(&arena_) {}
 
   // Reset the arena and clear the pools.
   // After a call to Reset(), all pointers previously returned by this allocator
