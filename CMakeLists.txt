@@ -4,10 +4,17 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+include(FindGFlags)
+include(FindProtobuf)
+include(FindGRPC)
+
 find_package(Threads REQUIRED)
 find_package(GFlags REQUIRED)
+find_package(Protobuf REQUIRED)
+find_package(GRPC REQUIRED)
 
 add_subdirectory(proto)
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(source_util util/source_util.h util/source_util.cc)

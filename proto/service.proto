@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package steinlang;
+
+option cc_enable_arenas = true;
+
+import "language.proto";
+
+message Status {
+  enum ErrorCode {
+    OK = 0;
+    UNKNOWN = 1;
+    ALREADY_EXISTS = 2;
+    SYNTAX = 3;
+  }
+  ErrorCode error_code = 1;
+  string error_message = 2;
+}
+
+message TextInterval {
+  int64 begin_line = 2;
+  int64 end_line = 3;
+  int64 begin_pos = 4;
+  int64 end_pos = 5;
+}
+
+message SyntaxError {
+  string error_message = 1;
+  TextInterval location = 2;
+}
+
+message AddProgramRequest {
+  string key = 1;
+  string text = 2;
+}
+
+message AddProgramResponse {
+  Status status = 1;
+  repeated SyntaxError syntax_error = 2;
+}
+
+message ModifyProgramRequest {
+  string key = 1;
+  string text = 2;
+}
+
+message ModifyProgramResponse {
+  Status status = 1;
+  repeated SyntaxError syntax_error = 2;
+}
+
+message ViewSnapshotRequest {
+  string key = 1;
+}
+
+message ViewSnapshotResponse {
+  oneof result {
+    Status status = 1;
+    EvalContext snapshot = 2;
+  }
+}
+
+message GetUpdatesRequest {
+  string key = 1;
+}
+
+message TextUpdate {
+  TextInterval old_location = 1;
+  string old_text = 2;
+  TextInterval new_location = 3;
+  string new_text = 4;
+}
+
+message ProgramUpdate {
+  repeated string pgm_output = 1;
+  repeated TextUpdate pgm_change = 2;
+}
+
+service Storage {
+  rpc AddProgram(AddProgramRequest) returns(AddProgramResponse) {}
+  rpc ModifyProgram(ModifyProgramRequest) returns(ModifyProgramResponse) {}
+  rpc ViewSnapshot(ViewSnapshotRequest) returns(ViewSnapshotResponse) {}
+  rpc GetUpdates(GetUpdatesRequest) returns(stream ProgramUpdate) {}
+}
