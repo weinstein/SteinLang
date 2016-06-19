@@ -7,11 +7,13 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(FindGFlags)
 include(FindProtobuf)
 include(FindGRPC)
+include(FindLevelDB)
 
 find_package(Threads REQUIRED)
 find_package(GFlags REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
+find_package(LevelDB REQUIRED)
 
 add_subdirectory(proto)
 

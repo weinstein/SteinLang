@@ -6,17 +6,6 @@ option cc_enable_arenas = true;
 
 import "language.proto";
 
-message Status {
-  enum ErrorCode {
-    OK = 0;
-    UNKNOWN = 1;
-    ALREADY_EXISTS = 2;
-    SYNTAX = 3;
-  }
-  ErrorCode error_code = 1;
-  string error_message = 2;
-}
-
 message TextInterval {
   int64 begin_line = 2;
   int64 end_line = 3;
@@ -35,7 +24,6 @@ message AddProgramRequest {
 }
 
 message AddProgramResponse {
-  Status status = 1;
   repeated SyntaxError syntax_error = 2;
 }
 
@@ -45,7 +33,6 @@ message ModifyProgramRequest {
 }
 
 message ModifyProgramResponse {
-  Status status = 1;
   repeated SyntaxError syntax_error = 2;
 }
 
@@ -54,10 +41,7 @@ message ViewSnapshotRequest {
 }
 
 message ViewSnapshotResponse {
-  oneof result {
-    Status status = 1;
-    EvalContext snapshot = 2;
-  }
+  EvalContext snapshot = 1;
 }
 
 message GetUpdatesRequest {
