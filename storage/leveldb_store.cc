@@ -76,7 +76,7 @@ leveldb::Status LevelDBStore::Put(const std::string& key, const EvalContext& ctx
 std::unique_ptr<LevelDBStore::Op> LevelDBStore::LockForOp(
     const std::string& key) {
   std::mutex* mu = &(key_locks_[key]);
-  return std::unique_ptr<LevelDBStore::Op>(new OpImpl(key, db_.get(), mu));
+  return std::make_unique<OpImpl>(key, db_.get(), mu);
 }
 
 }  // namespace steinlang
