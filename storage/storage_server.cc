@@ -1,5 +1,9 @@
 #include "storage/storage_server.h"
 
+#include <leveldb/status.h>
+
+#include "util/source_util.h"
+
 namespace steinlang {
 
 namespace {
@@ -60,7 +64,7 @@ grpc::Status StorageServiceImpl::ModifyProgram(
   Program new_pgm;
   // TODO parse req->text() into new_pgm.
   // TODO hotswap instead of destroying existing ctx.
-  old_ctx.Clear();
+  ctx.Clear();
   InitEvalContext(&new_pgm, &ctx);
   if (!ctx.SerializeToString(&value)) {
     return grpc::Status(grpc::StatusCode::INTERNAL, "serialization failed");

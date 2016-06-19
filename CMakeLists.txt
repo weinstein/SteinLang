@@ -4,11 +4,6 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-include(FindGFlags)
-include(FindProtobuf)
-include(FindGRPC)
-include(FindLevelDB)
-
 find_package(Threads REQUIRED)
 find_package(GFlags REQUIRED)
 find_package(Protobuf REQUIRED)
@@ -23,4 +18,7 @@ add_library(source_util util/source_util.h util/source_util.cc)
 target_link_libraries(source_util language_proto ${PROTOBUF_LIBRARY})
 
 add_executable(test_main.exe interpreter/test_main.cc interpreter/memory.cc interpreter/literal_ops.cc interpreter/language_evaluation.cc)
-target_link_libraries(test_main.exe language_proto source_util gflags ${PROTOBUF_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_main.exe language_proto source_util gflags)
+
+add_executable(storage_server.exe storage/storage_server.cc storage/storage_server_main.cc)
+target_link_libraries(storage_server.exe source_util language_proto gflags ${LevelDB_LIBRARY} ${GRPC_LIBRARIES})
