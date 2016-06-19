@@ -21,74 +21,60 @@ void InitEvalContext(Program* pgm, EvalContext* ctx) {
 grpc::Status StorageServiceImpl::AddProgram(grpc::ServerContext* server_ctx,
                                             const AddProgramRequest* req,
                                             AddProgramResponse* resp) {
-  std::string value;
-  leveldb::Status s = db_->Get(leveldb::ReadOptions(), req->key(), &value);
-  if (s.ok() && !value.empty()) {
+  auto op = store_->LockForOp(req->key());
+  leveldb::Status check_exists = op->CheckExistence();
+  if (check_exists.ok()) {
     return grpc::Status(grpc::StatusCode::ABORTED, "key already exists");
-  } else if (!s.IsNotFound()) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "leveldb read failed");
-  }
-
-  Program pgm;
-  // TODO parse req->text() into pgm.
-  EvalContext ctx;
-  InitEvalContext(&pgm, &ctx);
-  if (!ctx.SerializeToString(&value)) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "serialization failed");
-  }
-
-  s = db_->Put(leveldb::WriteOptions(), req->key(), value);
-  if (!s.ok()) {
+  } else if (check_exists.IsNotFound()) {
+    Program pgm;
+    // TODO parse req->text() into pgm.
+    EvalContext ctx;
+    InitEvalContext(&pgm, &ctx);
+    leveldb::Status status = op->Put(ctx);
+    if (!status.ok()) {
+      return grpc::Status(grpc::StatusCode::INTERNAL,
+                          "leveldb put failed: " + status.ToString());
+    }
+    return grpc::Status::OK;
+  } else {
     return grpc::Status(grpc::StatusCode::INTERNAL,
-                        "leveldb write failed: " + s.ToString());
+                        "leveldb get failed: " + check_exists.ToString());
   }
-  return grpc::Status::OK;
 }
 
-grpc::Status StorageServiceImpl::ModifyProgram(
-    grpc::ServerContext* server_ctx, const ModifyProgramRequest* req,
-    ModifyProgramResponse* resp) {
-  std::string value;
-  leveldb::Status s = db_->Get(leveldb::ReadOptions(), req->key(), &value);
-  if (s.IsNotFound()) {
-    return grpc::Status(grpc::StatusCode::NOT_FOUND, "key not found");
-  } else if (!s.ok()) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "leveldb read failed");
+grpc::Status StorageServiceImpl::ModifyProgram(grpc::ServerContext* server_ctx,
+                                               const ModifyProgramRequest* req,
+                                               ModifyProgramResponse* resp) {
+  auto op = store_->LockForOp(req->key());
+  EvalContext ctx;
+  leveldb::Status status = op->Get(&ctx);
+  if (!status.ok()) {
+    return grpc::Status(grpc::StatusCode::INTERNAL,
+                        "leveldb get failed: " + status.ToString());
   }
 
-  EvalContext ctx;
-  if (!ctx.ParseFromString(value)) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "parse failed");
-  }
   const Program& old_pgm = ctx.pgm();
   Program new_pgm;
   // TODO parse req->text() into new_pgm.
   // TODO hotswap instead of destroying existing ctx.
   ctx.Clear();
   InitEvalContext(&new_pgm, &ctx);
-  if (!ctx.SerializeToString(&value)) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "serialization failed");
-  }
-
-  s = db_->Put(leveldb::WriteOptions(), req->key(), value);
-  if (!s.ok()) {
+  status = op->Put(ctx);
+  if (!status.ok()) {
     return grpc::Status(grpc::StatusCode::INTERNAL,
-                        "leveldb write failed: " + s.ToString());
+                        "leveldb put failed: " + status.ToString());
   }
   return grpc::Status::OK;
 }
 
-grpc::Status StorageServiceImpl::ViewSnapshot(
-    grpc::ServerContext* server_ctx, const ViewSnapshotRequest* req,
-    ViewSnapshotResponse* resp) {
-  std::string value;
-  leveldb::Status s = db_->Get(leveldb::ReadOptions(), req->key(), &value);
-  if (!s.ok()) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "leveldb read failed");
-  }
+grpc::Status StorageServiceImpl::ViewSnapshot(grpc::ServerContext* server_ctx,
+                                              const ViewSnapshotRequest* req,
+                                              ViewSnapshotResponse* resp) {
   EvalContext ctx;
-  if (!ctx.ParseFromString(value)) {
-    return grpc::Status(grpc::StatusCode::INTERNAL, "parse failed");
+  leveldb::Status status = store_->Get(req->key(), &ctx);
+  if (!status.ok()) {
+    return grpc::Status(grpc::StatusCode::INTERNAL,
+                        "leveldb get failed: " + status.ToString());
   }
   *resp->mutable_snapshot() = ctx;
   return grpc::Status::OK;

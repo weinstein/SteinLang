@@ -8,13 +8,14 @@
 #include <memory>
 
 #include "proto/service.grpc.pb.h"
+#include "storage/leveldb_store.h"
 
 namespace steinlang {
 
 class StorageServiceImpl final : public Storage::Service {
  public:
-  explicit StorageServiceImpl(std::unique_ptr<leveldb::DB> db)
-      : db_(std::move(db)) {}
+  explicit StorageServiceImpl(std::unique_ptr<LevelDBStore> store)
+      : store_(std::move(store)) {}
 
   grpc::Status AddProgram(grpc::ServerContext* server_ctx,
                           const AddProgramRequest* req,
@@ -33,7 +34,7 @@ class StorageServiceImpl final : public Storage::Service {
                           grpc::ServerWriter<ProgramUpdate>* resp) override;
 
  private:
-  std::unique_ptr<leveldb::DB> db_;
+  std::unique_ptr<LevelDBStore> store_;
 };
 
 }  // namespace steinlang

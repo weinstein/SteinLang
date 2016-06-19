@@ -20,5 +20,5 @@ target_link_libraries(source_util language_proto ${PROTOBUF_LIBRARY})
 add_executable(test_main.exe interpreter/test_main.cc interpreter/memory.cc interpreter/literal_ops.cc interpreter/language_evaluation.cc)
 target_link_libraries(test_main.exe language_proto source_util gflags)
 
-add_executable(storage_server.exe storage/storage_server.cc storage/storage_server_main.cc)
+add_executable(storage_server.exe storage/leveldb_store.cc storage/storage_server.cc storage/storage_server_main.cc)
 target_link_libraries(storage_server.exe source_util language_proto gflags ${LevelDB_LIBRARY} ${GRPC_LIBRARIES})
