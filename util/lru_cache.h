@@ -58,7 +58,6 @@ class LRUCache {
     data_pos_.erase(map_it);
   }
 
- private:
   const size_t max_size_;
   std::unordered_map<K, typename std::list<value_type>::iterator> data_pos_;
   std::list<value_type> data_;

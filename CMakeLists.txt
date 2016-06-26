@@ -22,3 +22,6 @@ target_link_libraries(test_main.exe language_proto source_util gflags)
 
 add_executable(storage_server.exe storage/leveldb_store.cc storage/storage_server.cc storage/storage_server_main.cc)
 target_link_libraries(storage_server.exe source_util language_proto gflags ${LevelDB_LIBRARY} ${GRPC_LIBRARIES})
+
+add_executable(storage_tool.exe storage/storage_tool_main.cc)
+target_link_libraries(storage_tool.exe language_proto gflags ${GRPC_LIBRARIES})
