@@ -1,7 +1,10 @@
 #include "storage/storage_server.h"
 
+#include <leveldb/iterator.h>
 #include <leveldb/status.h>
 
+#include "interpreter/language_evaluation.h"
+#include "interpreter/memory.h"
 #include "util/source_util.h"
 
 namespace steinlang {
@@ -82,6 +85,44 @@ grpc::Status StorageServiceImpl::GetUpdates(
     grpc::ServerContext* server_ctx, const GetUpdatesRequest* req,
     grpc::ServerWriter<ProgramUpdate>* resp) {
   return grpc::Status(grpc::StatusCode::UNIMPLEMENTED, "not implemented");
+}
+
+leveldb::Status StorageServiceImpl::StepKey(const std::string& key,
+                                            int num_steps,
+                                            PoolingArenaAllocator* allocator) {
+  ScopedStorageItem<EvalContext> item = store_->GetStorageItem(key);
+  leveldb::Status status = item.Read();
+  if (!status.ok()) {
+    return status;
+  }
+
+  allocator->Reset();
+  EvalContext* ctx = allocator->AllocateEvalContext();
+  *ctx = item.value();
+  Evaluator evaluator(ctx, allocator);
+  for (int i = 0; i < num_steps && evaluator.HasComputation(); ++i) {
+    evaluator.Step();
+  }
+
+  *item.mutable_value() = evaluator.ctx();
+  return item.Write();
+}
+
+leveldb::Status StorageServiceImpl::StepAll(int num_steps) {
+  auto it = store_->iterator();
+  PoolingArenaAllocator allocator;
+  leveldb::Status status;
+  for (it->SeekToFirst(); it->Valid(); it->Next()) {
+    leveldb::Status step_status =
+        StepKey(it->key().ToString(), num_steps, &allocator);
+    if (!step_status.ok()) {
+      status = step_status;
+    }
+  }
+  if (!it->status().ok()) {
+    status = it->status();
+  }
+  return status;
 }
 
 }  // namespace steinlang

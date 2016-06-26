@@ -3,6 +3,7 @@
 
 #include <google/protobuf/message.h>
 #include <leveldb/db.h>
+#include <leveldb/iterator.h>
 #include <leveldb/status.h>
 #include <map>
 #include <memory>
@@ -131,6 +132,11 @@ class LevelDBStore {
     std::lock_guard<std::mutex> cache_lock(cache_mu_);
     return ScopedStorageItem<T>(cache_.FindOrEmplace(
         key, std::make_shared<StorageItem<T>>(db_.get(), key)));
+  }
+
+  std::unique_ptr<leveldb::Iterator> iterator() {
+    return std::unique_ptr<leveldb::Iterator>(
+        db_->NewIterator(leveldb::ReadOptions()));
   }
 
  private:

@@ -5,8 +5,10 @@
 #include <grpc++/server_context.h>
 #include <grpc/grpc.h>
 #include <leveldb/db.h>
+#include <leveldb/status.h>
 #include <memory>
 
+#include "interpreter/memory.h"
 #include "proto/service.grpc.pb.h"
 #include "storage/leveldb_store.h"
 
@@ -32,6 +34,11 @@ class StorageServiceImpl final : public Storage::Service {
   grpc::Status GetUpdates(grpc::ServerContext* server_ctx,
                           const GetUpdatesRequest* req,
                           grpc::ServerWriter<ProgramUpdate>* resp) override;
+
+  leveldb::Status StepAll(int num_steps);
+
+  leveldb::Status StepKey(const std::string& key, int num_steps,
+                          PoolingArenaAllocator* allocator);
 
  private:
   std::unique_ptr<LevelDBStore<EvalContext>> store_;
