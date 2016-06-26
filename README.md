@@ -11,7 +11,7 @@ To build:
 ```
 cmake .
 make
-bin/test_main --input_file=pgms/fibo_test.txt
+test_main.exe --input_file=pgms/fibo_test.txt
 ```
 
 The `--debug_print_steps` flag prints verbose state at each evaluation step: evaluation stack, result stack, and local environment map.
