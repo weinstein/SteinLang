@@ -21,16 +21,15 @@ void InitEvalContext(Program* pgm, EvalContext* ctx) {
 grpc::Status StorageServiceImpl::AddProgram(grpc::ServerContext* server_ctx,
                                             const AddProgramRequest* req,
                                             AddProgramResponse* resp) {
-  auto op = store_->LockForOp(req->key());
-  leveldb::Status check_exists = op->CheckExistence();
+  Program pgm;
+  // TODO parse req->text() into pgm.
+  ScopedStorageItem<EvalContext> item = store_->GetStorageItem(req->key());
+  leveldb::Status check_exists = item.Read();
   if (check_exists.ok()) {
     return grpc::Status(grpc::StatusCode::ABORTED, "key already exists");
   } else if (check_exists.IsNotFound()) {
-    Program pgm;
-    // TODO parse req->text() into pgm.
-    EvalContext ctx;
-    InitEvalContext(&pgm, &ctx);
-    leveldb::Status status = op->Put(ctx);
+    InitEvalContext(&pgm, item.mutable_value());
+    leveldb::Status status = item.Write();
     if (!status.ok()) {
       return grpc::Status(grpc::StatusCode::INTERNAL,
                           "leveldb put failed: " + status.ToString());
@@ -45,21 +44,20 @@ grpc::Status StorageServiceImpl::AddProgram(grpc::ServerContext* server_ctx,
 grpc::Status StorageServiceImpl::ModifyProgram(grpc::ServerContext* server_ctx,
                                                const ModifyProgramRequest* req,
                                                ModifyProgramResponse* resp) {
-  auto op = store_->LockForOp(req->key());
-  EvalContext ctx;
-  leveldb::Status status = op->Get(&ctx);
+  ScopedStorageItem<EvalContext> item = store_->GetStorageItem(req->key());
+  leveldb::Status status = item.Read();
   if (!status.ok()) {
     return grpc::Status(grpc::StatusCode::INTERNAL,
                         "leveldb get failed: " + status.ToString());
   }
 
-  const Program& old_pgm = ctx.pgm();
+  const Program& old_pgm = item.value().pgm();
   Program new_pgm;
   // TODO parse req->text() into new_pgm.
   // TODO hotswap instead of destroying existing ctx.
-  ctx.Clear();
-  InitEvalContext(&new_pgm, &ctx);
-  status = op->Put(ctx);
+  item.mutable_value()->Clear();
+  InitEvalContext(&new_pgm, item.mutable_value());
+  status = item.Write();
   if (!status.ok()) {
     return grpc::Status(grpc::StatusCode::INTERNAL,
                         "leveldb put failed: " + status.ToString());
@@ -70,13 +68,13 @@ grpc::Status StorageServiceImpl::ModifyProgram(grpc::ServerContext* server_ctx,
 grpc::Status StorageServiceImpl::ViewSnapshot(grpc::ServerContext* server_ctx,
                                               const ViewSnapshotRequest* req,
                                               ViewSnapshotResponse* resp) {
-  EvalContext ctx;
-  leveldb::Status status = store_->Get(req->key(), &ctx);
+  ScopedStorageItem<EvalContext> item = store_->GetStorageItem(req->key());
+  leveldb::Status status = item.Read();
   if (!status.ok()) {
     return grpc::Status(grpc::StatusCode::INTERNAL,
                         "leveldb get failed: " + status.ToString());
   }
-  *resp->mutable_snapshot() = ctx;
+  *resp->mutable_snapshot() = item.value();
   return grpc::Status::OK;
 }
 

@@ -14,15 +14,15 @@ DEFINE_string(db_path, "/tmp/db", "leveldb storage path");
 
 namespace {
 
-std::unique_ptr<steinlang::LevelDBStore> OpenLevelDBOrDie(
-    const std::string& db_path) {
+std::unique_ptr<steinlang::LevelDBStore<steinlang::EvalContext>>
+OpenLevelDBOrDie(const std::string& db_path) {
   leveldb::Options options;
   options.create_if_missing = true;
   leveldb::DB* db;
   assert(leveldb::DB::Open(options, db_path, &db).ok());
   printf("Opened leveldb %s\n", FLAGS_db_path.c_str());
-  return std::make_unique<steinlang::LevelDBStore>(
-      std::unique_ptr<leveldb::DB>(db));
+  return std::make_unique<steinlang::LevelDBStore<steinlang::EvalContext>>(
+      steinlang::LevelDBStoreOptions(), std::unique_ptr<leveldb::DB>(db));
 }
 
 }  // namespace

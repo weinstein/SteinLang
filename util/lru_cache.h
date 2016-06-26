@@ -27,7 +27,7 @@ class LRUCache {
 
   size_t size() const { return data_.size(); }
 
-  const value_type& FindWithDefault(value_type x) {
+  value_type& FindWithDefault(value_type x) {
     auto map_it = data_pos_.find(x.first);
     if (map_it != data_pos_.end()) {
       data_.splice(data_.begin(), data_, map_it->second);
@@ -45,7 +45,7 @@ class LRUCache {
   }
 
   template <typename... Args>
-  const V& FindOrEmplace(const K& key, Args&&... args) {
+  V& FindOrEmplace(const K& key, Args&&... args) {
     return FindWithDefault({key, V{std::forward<Args>(args)...}}).second;
   }
 

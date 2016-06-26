@@ -14,7 +14,7 @@ namespace steinlang {
 
 class StorageServiceImpl final : public Storage::Service {
  public:
-  explicit StorageServiceImpl(std::unique_ptr<LevelDBStore> store)
+  explicit StorageServiceImpl(std::unique_ptr<LevelDBStore<EvalContext>> store)
       : store_(std::move(store)) {}
 
   grpc::Status AddProgram(grpc::ServerContext* server_ctx,
@@ -34,7 +34,7 @@ class StorageServiceImpl final : public Storage::Service {
                           grpc::ServerWriter<ProgramUpdate>* resp) override;
 
  private:
-  std::unique_ptr<LevelDBStore> store_;
+  std::unique_ptr<LevelDBStore<EvalContext>> store_;
 };
 
 }  // namespace steinlang
