@@ -27,3 +27,17 @@ Keeping all program syntax trees and rewriting evaluation state in protobufs mak
 Performance of the evaluator is :shit:. It uses a lot of memory and is pretty slow.
 
 To combat memory allocation slowness, the evaluator uses an arena to allocate new messages, and uses pooling extensively for frequently copied/created/destroyed messages to avoid new allocations whenever possible.
+
+### Parser
+
+Support for a custom recursive descent parser is WIP.
+To try out the context-free grammar parser:
+```
+mkdir build && cd build
+cmake ..
+make
+cd lang
+./cfg_parser_main.exe < data/python.cfg.txt
+```
+This will print out the parse tree (albeit in a strange, confusing format).
+If parsing fails, a partial parse tree will be printed along with the unparsed tokens.
