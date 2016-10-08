@@ -1,10 +1,10 @@
 // Basic arithmetic operations on Literal values for MonArithExpression and
 // BinArithExpression evaluation.
 
-#ifndef INTERPRETER_LITERAL_OPS_H_
-#define INTERPRETER_LITERAL_OPS_H_
+#ifndef LANG_INTERPRETER_LITERAL_OPS_H_
+#define LANG_INTERPRETER_LITERAL_OPS_H_
 
-#include "proto/language.pb.h"
+#include "lang/interpreter/steinlang_syntax.pb.h"
 
 #include <string>
 
@@ -41,4 +41,4 @@ void BoolOr(Literal* x, Literal* y);
 
 }  // namespace steinlang
 
-#endif  // INTERPRETER_LITERAL_OPS_H_
+#endif  // LANG_INTERPRETER_LITERAL_OPS_H_

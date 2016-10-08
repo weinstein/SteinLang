@@ -1,0 +1,18 @@
+produces : '->' | '::=' | ':' | '=' ;
+int : "\\d+" ;
+id : "[[:alpha:]_]\\w*" ;
+regex_tok : "\"(\\\\.|[^\"])*\"" ;
+literal_tok : "'(\\\\.|[^'])*'" ;
+
+cardinality 
+  : '*' | '+' | '?'
+  | '{' int '}' | '{' int ',' int '}' ;
+term : '(' alternatives ')' | id | regex_tok | literal_tok ;
+expr : '[' alternatives ']' | term cardinality | term ;
+exprs : expr+ ;
+
+alternatives : exprs ('|' exprs)* ;
+rule : id produces alternatives ';' ;
+grammar : rule+ ;
+
+unknown -> ".";

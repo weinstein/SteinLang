@@ -4,12 +4,12 @@
 
 #include <chrono>
 #include <gflags/gflags.h>
+#include <google/protobuf/text_format.h>
 #include <stdio.h>
 
-#include "interpreter/language_evaluation.h"
+#include "lang/interpreter/language_evaluation.h"
+#include "lang/interpreter/source_util.h"
 #include "util/file_io.h"
-#include "util/map_util.h"
-#include "util/source_util.h"
 
 DEFINE_string(
     input_file, "",
@@ -59,7 +59,9 @@ int evaluate(std::unique_ptr<Evaluator> evaluator) {
 }
 
 void CtxFromFile(const std::string& fname, EvalContext* ctx) {
-  Program pgm = ParseAsciiProgram(fname);
+  Program pgm;
+  google::protobuf::TextFormat::ParseFromString(util::ReadFileToString(fname),
+                                                &pgm);
   AnnotateSource(&pgm);
   *ctx->mutable_pgm() = pgm;
   for (int i = pgm.stmt_size(); i-- > 0;) {

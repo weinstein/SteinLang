@@ -1,7 +1,7 @@
 // Memory management utilities specific to object pooling and arena allocation.
 
-#ifndef INTERPRETER_MEMORY_H_
-#define INTERPRETER_MEMORY_H_
+#ifndef LANG_INTERPRETER_MEMORY_H_
+#define LANG_INTERPRETER_MEMORY_H_
 
 #include <google/protobuf/arena.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@
 #include <tuple>
 #include <vector>
 
-#include "proto/language.pb.h"
+#include "lang/interpreter/steinlang_syntax.pb.h"
 
 namespace steinlang {
 
@@ -219,4 +219,4 @@ class PoolingArenaAllocator {
 
 }  // namespace steinlang
 
-#endif  // INTERPRETER_MEMORY_H_
+#endif  // LANG_INTERPRETER_MEMORY_H_

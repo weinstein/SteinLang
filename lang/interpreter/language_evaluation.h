@@ -1,8 +1,8 @@
-#ifndef INTERPRETER_LANGUAGE_EVALUATION_H_
-#define INTERPRETER_LANGUAGE_EVALUATION_H_
+#ifndef LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
+#define LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
 
-#include "interpreter/memory.h"
-#include "proto/language.pb.h"
+#include "lang/interpreter/memory.h"
+#include "lang/interpreter/steinlang_syntax.pb.h"
 
 namespace steinlang {
 
@@ -98,4 +98,4 @@ class Evaluator {
 
 }  // namespace steinlang
 
-#endif  // INTERPRETER_LANGUAGE_EVALUATION_H_
+#endif  // LANG_INTERPRETER_LANGUAGE_EVALUATION_H_

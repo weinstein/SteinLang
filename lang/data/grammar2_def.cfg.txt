@@ -1,0 +1,36 @@
+produces -> '->' | '::=' | ':' | '=' ;
+int -> "\\d+" ;
+id -> "[[:alpha:]_]\\w*" ;
+regex_tok -> "\"(\\\\.|[^\"])*\"" ;
+literal_tok -> "'(\\\\.|[^'])*'" ;
+
+terminal -> regex_tok | literal_tok ;
+symbol -> id | terminal;
+term -> symbol | group_term ;
+
+group_term -> '(' alternatives ')'
+
+optional_term -> '[' alternatives ']' | term '?' ;
+repeated_any_term -> term '*' ;
+repeated_one_or_more_term -> term '+' ;
+
+num_repetitions -> int ;
+repeated_exactly_term -> term '{' num_repetitions '}' ;
+
+min_repetitions -> int ;
+max_repetitions -> int ;
+repeated_between_term -> term '{' min_repetitions ',' max_repetitions '}' ;
+
+expr -> optional_term
+      | repeated_any_term
+      | repeated_one_or_more_term
+      | repeated_exactly_term
+      | repeated_between_term
+      | term ;
+exprs -> expr+ ;
+
+alternatives -> exprs ('|' exprs)* ;
+rule -> id produces alternatives ';' ;
+grammar -> rule+ ;
+
+unknown -> ".";
