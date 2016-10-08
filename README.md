@@ -2,16 +2,18 @@
 
 ### Demo
 
-There's no lexing/parsing yet, but there are some example programs in the `pgms` subdirectory which are ASCII protobuf syntax trees.
+There's no lexing/parsing yet, but there are some example programs in the `lang/interpreter/pgms` subdirectory which are ASCII protobuf syntax trees.
 
 It's possible to write new syntax trees, but it's a pain in the buns.
 
-The `test_main` binary can evaluate them, print any output printed by the program, and print some timing information.
+The `interpreter_main` binary can evaluate them, print any output printed by the program, and print some timing information.
 To build:
 ```
-cmake .
+mkdir build && cd build
+cmake ..
 make
-test_main.exe --input_file=pgms/fibo_test.txt
+cd lang/interpreter
+./interpreter_main.exe --input_file=pgms/fibo_test.txt
 ```
 
 The `--debug_print_steps` flag prints verbose state at each evaluation step: evaluation stack, result stack, and local environment map.
