@@ -9,11 +9,11 @@ It's possible to write new syntax trees, but it's a pain in the buns.
 The `interpreter_main` binary can evaluate them, print any output printed by the program, and print some timing information.
 To build:
 ```
-mkdir build && cd build
-cmake ..
-make
-cd lang/interpreter
-./interpreter_main.exe --input_file=pgms/fibo_test.txt
+$ mkdir build && cd build
+$ cmake ..
+$ make
+$ cd lang/interpreter
+$ ./interpreter_main.exe --input_file=pgms/fibo_test.txt
 ```
 
 The `--debug_print_steps` flag prints verbose state at each evaluation step: evaluation stack, result stack, and local environment map.
@@ -31,13 +31,43 @@ To combat memory allocation slowness, the evaluator uses an arena to allocate ne
 ### Parser
 
 Support for a custom recursive descent parser is WIP.
-To try out the context-free grammar parser:
+Currently, there's support for defining context-free grammars (without left recursion) in text format, and generating a recursive descent parser from that definition.
+For example, the grammar defining the language of exclamations ("ahh", "AAAAHHHH", etc):
 ```
-mkdir build && cd build
-cmake ..
-make
-cd lang
-./cfg_parser_main.exe < data/python.cfg.txt
+$ cat ahh.cfg.txt
+a -> 'a' | 'A' ;
+h -> 'h' | 'H' ;
+exclamation -> a+ h+ ;
+$ echo "AAAAHHH" | ./cfg_parser_main.exe --start_symbol=exclamation --grammar_def=ahh.cfg.txt
+
 ```
-This will print out the parse tree (albeit in a strange, confusing format).
-If parsing fails, a partial parse tree will be printed along with the unparsed tokens.
+
+The full syntax recognized by the context-free grammar parser is in lang/data/grammar_def.cfg.txt:
+```
+produces : '->' | '::=' | ':' | '=' ;
+int : "\\d+" ;
+id : "[[:alpha:]_]\\w*" ;
+regex_tok : "\"(\\\\.|[^\"])*\"" ;
+literal_tok : "'(\\\\.|[^'])*'" ;
+
+cardinality 
+  : '*' | '+' | '?'
+  | '{' int '}' | '{' int ',' int '}' ;
+term : '(' alternatives ')' | id | regex_tok | literal_tok ;
+expr : '[' alternatives ']' | term cardinality | term ;
+exprs : expr+ ;
+
+alternatives : exprs ('|' exprs)* ;
+rule : id produces alternatives ';' ;
+grammar : rule+ ;
+
+unknown -> ".";
+```
+
+A more convoluted demo:
+```
+$ ./cfg_parser_main.exe --debug_print_parse_trees \
+    --start_symbol=grammar --ignore_regex="\\s+" \
+    --grammar_def=data/grammar_def.cfg.txt <data/grammar_def.cfg.txt
+```
+The input text will be read from stdin and tokenized/parsed as the grammar defined in the grammar def file.
