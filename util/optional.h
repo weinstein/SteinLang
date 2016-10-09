@@ -13,7 +13,7 @@ class Optional {
   Optional(const EmptyOptional&) : Optional() {}
 
   Optional(const T& x) : is_present_(true), data_(x) {}
-  Optional(T&& x) : is_present_(true), data_(x) {}
+  Optional(T&& x) : is_present_(true), data_(std::move(x)) {}
 
   Optional<T>& operator=(const T& x) {
     if (!is_present_) {
