@@ -1,0 +1,29 @@
+varlist : id (',' id)* ;
+explist : [ exp (',' exp)* ] ;
+trailer : '(' explist ')' ;
+
+lambda : 'lambda' varlist ':' exp ;
+
+atom : '(' exp ')' 
+     | none | bool | int | float | string
+     | lambda | id ;
+atom_expr : atom trailer* ;
+
+monop : '!' | '-' ;
+binop : '+' | '-' | '*' | '/'
+      | '>=' | '>' | '<=' | '<' | '==' | '!='
+      | '&&' | '||' ;
+arith_exp : monop atom_expr | atom_expr binop atom_expr | atom_expr ;
+exp : arith_exp 'if' arith_exp 'else' arith_exp | arith_exp ;
+
+stmt : 'return' exp ';' | 'print' exp ';' | exp ';' | exp '=' exp ';' ;
+pgm : stmt+ ;
+
+none : 'None' ;
+bool : 'True' | 'False' ;
+int : "\\d+" ;
+float : "\\d+\\.\\d*" ;
+string : "\"(\\\\.|[^\"])*\"" ;
+id : "[[:alpha:]_]\\w*" ;
+
+unknown : "." ;

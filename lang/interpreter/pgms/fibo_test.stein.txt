@@ -1,0 +1,2 @@
+f = lambda n: f(n-1) + f(n-2) if n >= 2 else n ;
+print f(20) ;
