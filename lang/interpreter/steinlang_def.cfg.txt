@@ -2,21 +2,19 @@ varlist : id (',' id)* ;
 explist : [ exp (',' exp)* ] ;
 trailer : '(' explist ')' ;
 
-lambda : 'lambda' varlist ':' exp ;
-
 atom : '(' exp ')' 
      | none | bool | int | float | string
-     | lambda | id ;
+     | id ;
 atom_expr : atom trailer* ;
 
 monop : '!' | '-' ;
 binop : '+' | '-' | '*' | '/'
       | '>=' | '>' | '<=' | '<' | '==' | '!='
       | '&&' | '||' ;
-arith_exp : monop atom_expr | atom_expr binop atom_expr | atom_expr ;
-exp : arith_exp 'if' arith_exp 'else' arith_exp | arith_exp ;
+arith_expr : monop atom_expr | atom_expr binop atom_expr | atom_expr ;
+expr : 'lambda' varlist ':' expr | arith_expr 'if' arith_expr 'else' arith_expr | arith_expr ;
 
-stmt : 'return' exp ';' | 'print' exp ';' | exp ';' | exp '=' exp ';' ;
+stmt : 'return' expr ';' | 'print' expr ';' | expr ';' | expr '=' expr ';' ;
 pgm : stmt+ ;
 
 none : 'None' ;
