@@ -69,8 +69,7 @@ class CfgParser : public RecursiveDescentParser<CfgToken, CfgSyntax> {
 };
 
 struct ParsedGrammar {
-  typedef Tokenizer<std::string> Tokenizer;
-  Tokenizer tokenizer;
+  Tokenizer<std::string> tokenizer;
 
   typedef RecursiveDescentParser<std::string, std::string> Parser;
   Parser parser;
