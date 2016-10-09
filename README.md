@@ -2,7 +2,7 @@
 
 ### Demo
 
-There's no lexing/parsing yet, but there are some example programs in the `lang/interpreter/pgms` subdirectory which are ASCII protobuf syntax trees.
+There's no lexing/parsing for the actual steinlang syntax yet, but there are some example programs in the `lang/interpreter/pgms` subdirectory which are ASCII protobuf syntax trees.
 
 It's possible to write new syntax trees, but it's a pain in the buns.
 
