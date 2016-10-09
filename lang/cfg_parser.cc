@@ -1,5 +1,7 @@
 #include "lang/cfg_parser.h"
 
+#include <vector> 
+
 #include "lang/parse_tree_util.h"
 #include "util/strings.h"
 
@@ -27,7 +29,9 @@ CfgTokenizer::CfgTokenizer() {
   add_rule(CfgToken::PLUS, R"(\+)");
   add_rule(CfgToken::QMARK, R"(\?)");
   add_rule(CfgToken::UNKNOWN, ".");
+  // Ignore comments.
   ignore_rule(R"(^#[^\n]*)");
+  // Ignore all other whitespace.
   ignore_rule(R"(\s+)");
 }
 
@@ -38,35 +42,31 @@ CfgParser::CfgParser()
   add_rule(CfgSyntax::REGEX_TOK, {Term::Terminal(CfgToken::REGEX_TOK)});
   add_rule(CfgSyntax::LITERAL_TOK, {Term::Terminal(CfgToken::LITERAL_TOK)});
 
-  add_rule(CfgSyntax::GROUP_TERM, {Term::Terminal(CfgToken::LPAREN),
-                                   Term::NonTerminal(CfgSyntax::ALTERNATIVES),
-                                   Term::Terminal(CfgToken::RPAREN)});
-  add_rule(CfgSyntax::OPTIONAL_TERM,
-           {Term::Terminal(CfgToken::LBRACKET),
-            Term::NonTerminal(CfgSyntax::ALTERNATIVES),
-            Term::Terminal(CfgToken::RBRACKET)});
-  add_rule(CfgSyntax::TERM, {Term::NonTerminal(CfgSyntax::GROUP_TERM)});
+  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::STAR)});
+  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::PLUS)});
+  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::QMARK)});
+  add_rule(CfgSyntax::CARDINALITY,
+           {Term::Terminal(CfgToken::LBRACE), Term::NonTerminal(CfgSyntax::INT),
+            Term::Terminal(CfgToken::RBRACE)});
+  add_rule(CfgSyntax::CARDINALITY,
+           {Term::Terminal(CfgToken::LBRACE), Term::NonTerminal(CfgSyntax::INT),
+            Term::Terminal(CfgToken::COMMA), Term::NonTerminal(CfgSyntax::INT),
+            Term::Terminal(CfgToken::RBRACE)});
+
+  add_rule(CfgSyntax::TERM, {Term::Terminal(CfgToken::LPAREN),
+                             Term::NonTerminal(CfgSyntax::ALTERNATIVES),
+                             Term::Terminal(CfgToken::RPAREN)});
   add_rule(CfgSyntax::TERM, {Term::NonTerminal(CfgSyntax::ID)});
   add_rule(CfgSyntax::TERM, {Term::NonTerminal(CfgSyntax::REGEX_TOK)});
   add_rule(CfgSyntax::TERM, {Term::NonTerminal(CfgSyntax::LITERAL_TOK)});
 
-  add_rule(CfgSyntax::TIMES,
-           {Term::Terminal(CfgToken::LBRACE), Term::NonTerminal(CfgSyntax::INT),
-            Term::Terminal(CfgToken::RBRACE)});
-  add_rule(CfgSyntax::RANGE,
-           {Term::Terminal(CfgToken::LBRACE), Term::NonTerminal(CfgSyntax::INT),
-            Term::Terminal(CfgToken::COMMA), Term::NonTerminal(CfgSyntax::INT),
-            Term::Terminal(CfgToken::RBRACE)});
-  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::STAR)});
-  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::PLUS)});
-  add_rule(CfgSyntax::CARDINALITY, {Term::Terminal(CfgToken::QMARK)});
-  add_rule(CfgSyntax::CARDINALITY, {Term::NonTerminal(CfgSyntax::TIMES)});
-  add_rule(CfgSyntax::CARDINALITY, {Term::NonTerminal(CfgSyntax::RANGE)});
-
-  add_rule(CfgSyntax::EXPR, {Term::NonTerminal(CfgSyntax::OPTIONAL_TERM)});
+  add_rule(CfgSyntax::EXPR, {Term::Terminal(CfgToken::LBRACKET),
+                             Term::NonTerminal(CfgSyntax::ALTERNATIVES),
+                             Term::Terminal(CfgToken::RBRACKET)});
   add_rule(CfgSyntax::EXPR, {Term::NonTerminal(CfgSyntax::TERM),
                              Term::NonTerminal(CfgSyntax::CARDINALITY)});
   add_rule(CfgSyntax::EXPR, {Term::NonTerminal(CfgSyntax::TERM)});
+
   add_rule(CfgSyntax::EXPRS,
            {{Cardinality::AtLeast(1), Term::NonTerminal(CfgSyntax::EXPR)}});
 
@@ -264,19 +264,40 @@ ParsedGrammar::Parser::Alternatives ToSyntax(
   return alts;
 }
 
-std::map<std::string, ParsedGrammar::Parser::Alternatives> ToRules(
-    const CfgParser::ParseTreeNode& node) {
-  std::map<std::string, ParsedGrammar::Parser::Alternatives> rules;
+std::vector<std::pair<std::string, ParsedGrammar::Parser::Alternatives>>
+ToRules(const CfgParser::ParseTreeNode& node) {
+  std::vector<std::pair<std::string, ParsedGrammar::Parser::Alternatives>>
+      rules;
   for (const auto& child : node.children()) {
     std::string rule_name;
     ParsedGrammar::Parser::Alternatives alts;
     if (Match(child.children(), {CfgSyntax::ID, CfgToken::PRODUCES,
                                  CfgSyntax::ALTERNATIVES, CfgToken::SEMICOLON},
               rule_name, kIgnore, alts, kIgnore)) {
-      rules.emplace(std::move(rule_name), std::move(alts));
+      rules.push_back({std::move(rule_name), std::move(alts)});
     }
   }
   return rules;
+}
+
+void ToTokens(const ParsedGrammar::Parser::Alternatives& alts,
+              std::vector<std::string>* out);
+void ToTokens(const ParsedGrammar::Parser::Term& term,
+              std::vector<std::string>* out) {
+  if (term.is_group()) {
+    ToTokens(term.group(), out);
+  } else if (term.is_terminal()) {
+    out->push_back(term.terminal());
+  }
+}
+
+void ToTokens(const ParsedGrammar::Parser::Alternatives& alts,
+              std::vector<std::string>* out) {
+  for (const auto& exprs : alts) {
+    for (const auto& expr : exprs) {
+      ToTokens(expr.term, out);
+    }
+  }
 }
 
 }  // namespace
@@ -284,13 +305,18 @@ std::map<std::string, ParsedGrammar::Parser::Alternatives> ToRules(
 ParsedGrammar::ParsedGrammar(std::string start_rule,
                              const CfgParser::ParseTreeNode& root)
     : ParsedGrammar(std::move(start_rule)) {
-  std::map<std::string, ParsedGrammar::Parser::Alternatives> rules =
-      ToRules(root);
+  std::vector<std::pair<std::string, ParsedGrammar::Parser::Alternatives>>
+      rules = ToRules(root);
+  std::vector<std::string> token_tags;
   for (auto& kv : rules) {
+    ToTokens(kv.second, &token_tags);
     const std::string rule_name = std::move(kv.first);
     for (auto& alt : kv.second) {
       parser.add_rule(rule_name, std::move(alt));
     }
+  }
+  for (const std::string& token_tag : token_tags) {
+    tokenizer.add_rule(token_tag, token_tag);
   }
 }
 

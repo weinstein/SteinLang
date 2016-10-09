@@ -34,6 +34,7 @@ add_executable(
 target_link_libraries(
   cfg_parser_main.exe
   cfg_parser
+  gflags
 )
 
 add_subdirectory(interpreter)
