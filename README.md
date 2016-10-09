@@ -38,8 +38,7 @@ $ cat ahh.cfg.txt
 a -> 'a' | 'A' ;
 h -> 'h' | 'H' ;
 exclamation -> a+ h+ ;
-$ echo "AAAAHHH" | ./cfg_parser_main.exe --start_symbol=exclamation --grammar_def=ahh.cfg.txt
-
+$ echo "AAAAHHH" | ./cfg_parser_main.exe --start_symbol=exclamation --grammar_def=ahh.cfg.txt --ignore_regex="\\s+"
 ```
 
 The full syntax recognized by the context-free grammar parser is in lang/data/grammar_def.cfg.txt:
