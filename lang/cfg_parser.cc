@@ -30,7 +30,7 @@ CfgTokenizer::CfgTokenizer() {
   add_rule(CfgToken::QMARK, R"(\?)");
   add_rule(CfgToken::UNKNOWN, ".");
   // Ignore comments.
-  ignore_rule(R"(^#[^\n]*)");
+  ignore_rule(R"(#[^\n]*)");
   // Ignore all other whitespace.
   ignore_rule(R"(\s+)");
 }
