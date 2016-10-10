@@ -1,12 +1,12 @@
 #ifndef LANG_INTERPRETER_STEINLANG_PARSER_H_
 #define LANG_INTERPRETER_STEINLANG_PARSER_H_
 
-#include "lang/tokenizer.h"
 #include "lang/recursive_descent_parser.h"
+#include "lang/tokenizer.h"
 
 namespace steinlang {
 
-enum class Token {
+enum class TokenTag {
   NONE,
   BOOL,
   INT,
@@ -44,12 +44,12 @@ enum class Token {
   UNKNOWN,
 };
 
-class Tokenizer : public lang::Tokenizer<Token> {
+class Tokenizer : public lang::Tokenizer<TokenTag> {
  public:
   Tokenizer();
 };
 
-enum class Variable {
+enum class VariableTag {
   VARLIST,
   EXPLIST,
   TRAILER,
@@ -64,7 +64,7 @@ enum class Variable {
   PGM,
 };
 
-class Parser : public lang::RecursiveDescentParser<Token, Variable> {
+class Parser : public lang::RecursiveDescentParser<TokenTag, VariableTag> {
  public:
   Parser();
 };

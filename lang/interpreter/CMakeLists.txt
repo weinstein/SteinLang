@@ -33,3 +33,14 @@ target_link_libraries(
   util
   gflags
 )
+
+add_library(
+  steinlang_parser
+  steinlang_parser.h
+  steinlang_parser.cc
+)
+target_link_libraries(
+  steinlang_parser
+  tokenizer
+  recursive_descent_parser
+)
