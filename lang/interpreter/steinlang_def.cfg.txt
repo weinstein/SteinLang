@@ -1,8 +1,8 @@
 varlist : id (',' id)* ;
-explist : [ exp (',' exp)* ] ;
+explist : [ expr (',' expr)* ] ;
 trailer : '(' explist ')' ;
 
-atom : '(' exp ')' 
+atom : '(' expr ')' 
      | none | bool | int | float | string
      | id ;
 atom_expr : atom trailer* ;
