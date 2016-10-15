@@ -38,8 +38,8 @@ Tokenizer::Tokenizer() {
   add_rule(TokenTag::SEMICOLON, ";");
   add_rule(TokenTag::NONE, "None");
   add_rule(TokenTag::BOOL, "(True|False)");
-  add_rule(TokenTag::INT, R"(\d+)");
   add_rule(TokenTag::FLOAT, R"(\d+\.\d*)");
+  add_rule(TokenTag::INT, R"(\d+)");
   add_rule(TokenTag::STRING, R"("(\\.|[^"])*")");
   add_rule(TokenTag::ID, R"([[:alpha:]_]\w*)");
   add_rule(TokenTag::UNKNOWN, ".");
