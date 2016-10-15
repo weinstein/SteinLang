@@ -1,6 +1,6 @@
 # steinlang
 
-### Demo
+## Demo
 
 Run the `interpreter_main` binary to parse and evaluate programs from stdin, and print some timing information.
 Ex:
@@ -12,36 +12,36 @@ $ cd lang/interpreter
 $ echo "print \"hello, world!\";" | ./interpreter_main.exe
 ```
 
-## Example programs
+### Example programs
 
 There are some sample programs under `lang/interpreter/pgms`. They may be run through the interpreter:
 ```
 $ cat lang/interpreter/pgms/fibo_test.stein.txt | interpreter_main.exe
 ```
 
-## Flags
+### Flags
 
 There are a number of flags available to print debug information:
 
-*  --debug\_print\_steps: print verbose evaluation state at each evaluation step (eval stack, result stack, local environment map)
+*  `--debug_print_steps`: print verbose evaluation state at each evaluation step (eval stack, result stack, local environment map)
 
-*  --debug\_print\_parse\_trees: print the parse tree of the parsed input program
+*  `--debug_print_parse_trees`: print the parse tree of the parsed input program
 
-*  --debug\_print\_syntax\_tree: print the ascii protobuf syntax tree resulting from the parse tree
+*  `--debug_print_syntax_tree`: print the ascii protobuf syntax tree resulting from the parse tree
 
 There are also a number of flags to tweak protobuf arena allocation performance. Run `interpreter_main.exe --help` for a full list of available flags.
 
-### Serialization
+## Serialization
 
 Keeping all program syntax trees and rewriting evaluation state in protobufs makes serialization easy, although there's no demo implementing this yet. Evaluation can be paused and serialized (to storage or for network transmission) at any point in program execution to be deserialized and resumed later.
 
-### Performance
+## Performance
 
 Performance of the evaluator is :shit:. It uses a lot of memory and is pretty slow.
 
 To combat memory allocation slowness, the evaluator uses an arena to allocate new messages, and uses pooling extensively for frequently copied/created/destroyed messages to avoid new allocations whenever possible.
 
-### Parser
+## Parser
 
 The steinlang interpreter's parser is built on a homebrew recursive descent parser.
 Currently, there's support for defining context-free grammars (without left recursion) in text format, and generating a recursive descent parser from that definition.
