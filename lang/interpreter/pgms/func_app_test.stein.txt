@@ -1,0 +1,4 @@
+id = lambda x: x;
+inc = lambda x: x + 1;
+seven = id(id)(inc)(inc(5));
+print seven;

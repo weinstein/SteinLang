@@ -1,2 +1,2 @@
-f = lambda n: f(n-1) + f(n-2) if n >= 2 else n ;
-print f(20) ;
+fib = lambda n: n if n <= 1 else fib(n-1) + fib(n-2);
+print fib(12);

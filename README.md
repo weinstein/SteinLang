@@ -12,6 +12,15 @@ $ cd lang/interpreter
 $ echo "print \"hello, world!\";" | ./interpreter_main.exe
 ```
 
+## Example programs
+
+There are some sample programs under `lang/interpreter/pgms`. They may be run through the interpreter:
+```
+$ cat lang/interpreter/pgms/fibo_test.stein.txt | interpreter_main.exe
+```
+
+## Flags
+
 There are a number of flags available to print debug information:
 
 *  --debug\_print\_steps: print verbose evaluation state at each evaluation step (eval stack, result stack, local environment map)
