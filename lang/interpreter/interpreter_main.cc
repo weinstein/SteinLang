@@ -78,15 +78,15 @@ int evaluate(std::unique_ptr<Evaluator> evaluator) {
   int steps = 0;
   int num_output_printed = 0;
   while (evaluator->HasComputation()) {
-    if (FLAGS_debug_print_steps) {
-      DebugPrint(evaluator->ctx());
-    }
     evaluator->Step();
     if (evaluator->ctx().output_size() > num_output_printed) {
       printf("output: %s\n",
              evaluator->ctx().output(num_output_printed++).c_str());
     }
     ++steps;
+    if (FLAGS_debug_print_steps) {
+      DebugPrint(evaluator->ctx());
+    }
   }
   return steps;
 }
