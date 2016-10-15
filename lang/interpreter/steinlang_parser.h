@@ -1,6 +1,7 @@
 #ifndef LANG_INTERPRETER_STEINLANG_PARSER_H_
 #define LANG_INTERPRETER_STEINLANG_PARSER_H_
 
+#include "lang/interpreter/steinlang_syntax.pb.h"
 #include "lang/recursive_descent_parser.h"
 #include "lang/tokenizer.h"
 
@@ -44,6 +45,11 @@ enum class TokenTag {
   UNKNOWN,
 };
 
+inline std::ostream& operator<<(std::ostream& os, TokenTag tag) {
+  os << (int) tag;
+  return os;
+}
+
 class Tokenizer : public lang::Tokenizer<TokenTag> {
  public:
   Tokenizer();
@@ -53,6 +59,7 @@ enum class VariableTag {
   VARLIST,
   EXPLIST,
   TRAILER,
+  TRAILER_LIST,
   LAMBDA_EXPR,
   ATOM,
   ATOM_EXPR,
@@ -64,10 +71,17 @@ enum class VariableTag {
   PGM,
 };
 
+inline std::ostream& operator<<(std::ostream& os, VariableTag tag) {
+  os << (int) tag;
+  return os;
+}
+
 class Parser : public lang::RecursiveDescentParser<TokenTag, VariableTag> {
  public:
   Parser();
 };
+
+Program ToProgram(const Parser::ParseTreeNode& parse_tree);
 
 }  // namespace steinlang
 

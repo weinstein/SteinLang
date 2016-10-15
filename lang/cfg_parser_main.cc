@@ -57,6 +57,7 @@ util::Optional<typename Parser::ParseTreeNode> LexAndParse(
   }
   return std::move(parse_result.node);
 }
+
 }
 
 int main(int argc, char** argv) {

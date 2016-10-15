@@ -1,11 +1,12 @@
 varlist : id (',' id)* ;
 explist : [ expr (',' expr)* ] ;
 trailer : '(' explist ')' ;
+trailer_list : trailer* ;
 
 atom : '(' expr ')' 
      | none | bool | int | float | string
      | id ;
-atom_expr : atom trailer* ;
+atom_expr : atom trailer_list ;
 
 monop : '!' | '-' ;
 binop : '+' | '-' | '*' | '/'

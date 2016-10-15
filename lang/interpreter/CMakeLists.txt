@@ -22,18 +22,6 @@ target_link_libraries(
   ${PROTOBUF_LIBRARIES}
 )
 
-add_executable(
-  interpreter_main.exe
-  interpreter_main.cc
-  source_util.h source_util.cc
-)
-target_link_libraries(
-  interpreter_main.exe
-  language_evaluation
-  util
-  gflags
-)
-
 add_library(
   steinlang_parser
   steinlang_parser.h
@@ -41,6 +29,21 @@ add_library(
 )
 target_link_libraries(
   steinlang_parser
+  steinlang_syntax_proto
   tokenizer
   recursive_descent_parser
+  util
+)
+
+add_executable(
+  interpreter_main.exe
+  interpreter_main.cc
+  source_util.h source_util.cc
+)
+target_link_libraries(
+  interpreter_main.exe
+  steinlang_parser
+  language_evaluation
+  util
+  gflags
 )

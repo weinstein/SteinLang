@@ -18,6 +18,17 @@ bool Matches(const typename Parser::ParseTreeNode& node,
 }
 
 template <typename Parser>
+bool Matches(const typename Parser::ParseTreeNode& node,
+             const util::OneOf<typename Parser::token_type,
+                               typename Parser::variable_type>& s) {
+  if (node.is_terminal()) {
+    return s.is_first() && node.token().tag == s.first();
+  } else {
+    return s.is_second() && node.variable_tag() == s.second();
+  }
+}
+
+template <typename Parser>
 bool Matches(const std::vector<typename Parser::ParseTreeNode>& nodes,
              const std::vector<typename Parser::Symbol>& symbols) {
   if (nodes.size() != symbols.size()) {
