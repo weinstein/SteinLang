@@ -1,6 +1,9 @@
 #ifndef LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
 #define LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
 
+#include <string>
+#include <vector>
+
 #include "lang/interpreter/memory.h"
 #include "lang/interpreter/steinlang_syntax.pb.h"
 
@@ -33,6 +36,15 @@ class Evaluator {
   void Assign(const std::string& var_name, PoolPtr<Literal> value);
 
   const EvalContext& ctx() const { return *ctx_; }
+
+  std::vector<std::string> consume_output() {
+    std::vector<std::string> output;
+    for (auto& x : *ctx_->mutable_output()) {
+      output.push_back(std::move(x));
+    }
+    ctx_->clear_output();
+    return output;
+  }
 
  private:
   void Evaluate(PoolPtr<Expression> exp);

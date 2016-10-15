@@ -14,6 +14,7 @@ DEFINE_bool(debug_print_syntax_tree, false, "");
 DEFINE_bool(debug_print_steps, false,
             "If true, print verbose evaluation state after each step. This "
             "slows down execution significantly.");
+DEFINE_bool(debug_print_timing, false, "");
 
 namespace {
 
@@ -79,9 +80,8 @@ int evaluate(std::unique_ptr<Evaluator> evaluator) {
   int num_output_printed = 0;
   while (evaluator->HasComputation()) {
     evaluator->Step();
-    if (evaluator->ctx().output_size() > num_output_printed) {
-      printf("output: %s\n",
-             evaluator->ctx().output(num_output_printed++).c_str());
+    for (const std::string& output : evaluator->consume_output()) {
+      printf("output: %s\n", output.c_str());
     }
     ++steps;
     if (FLAGS_debug_print_steps) {
@@ -99,16 +99,12 @@ void InitCtx(const Program& pgm, EvalContext* ctx) {
   }
 }
 
-}  // namespace steinlang
-
-int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-
+bool Evaluate(const std::string& input, EvalContext* ctx, PoolingArenaAllocator* allocator) {
   const util::Optional<steinlang::Parser::ParseTreeNode> parse_result =
-      LexAndParse(ReadStdIn(), steinlang::Tokenizer(), steinlang::Parser());
+      LexAndParse(input, steinlang::Tokenizer(), steinlang::Parser());
   if (!parse_result.is_present()) {
-    std::cout << "failed to parse input program.\n";
-    return 1;
+    std::cout << "failed to parse input.\n";
+    return false;
   }
 
   steinlang::Program pgm = steinlang::ToProgram(parse_result.value());
@@ -116,18 +112,29 @@ int main(int argc, char** argv) {
     std::cout << pgm.DebugString() << "\n";
   }
 
-  steinlang::PoolingArenaAllocator allocator;
-  steinlang::EvalContext* ctx = allocator.AllocateEvalContext();
   steinlang::InitCtx(pgm, ctx);
-
-  auto evaluator = std::make_unique<steinlang::Evaluator>(ctx, &allocator);
+  auto evaluator = std::make_unique<steinlang::Evaluator>(ctx, allocator);
   auto start = std::chrono::high_resolution_clock::now();
   int num_steps = evaluate(std::move(evaluator));
   auto elapsed = std::chrono::high_resolution_clock::now() - start;
   long long microseconds =
       std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-  printf("total num steps evaluated: %d\n", num_steps);
-  printf("total time: %lld us\n", microseconds);
-  printf("avg: %f us / step\n", static_cast<float>(microseconds) / num_steps);
+  if (FLAGS_debug_print_timing) {
+    printf("total num steps evaluated: %d\n", num_steps);
+    printf("total time: %lld us\n", microseconds);
+    printf("avg: %f us / step\n", static_cast<float>(microseconds) / num_steps);
+  }
+  return true;
+}
+
+}  // namespace steinlang
+
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
+
+  steinlang::PoolingArenaAllocator allocator;
+  steinlang::EvalContext* ctx = allocator.AllocateEvalContext();
+  for (std::string line; std::getline(std::cin, line) && Evaluate(line, ctx, &allocator);) {}
+
   return 0;
 }
