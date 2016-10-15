@@ -2,21 +2,25 @@
 
 ### Demo
 
-There's no lexing/parsing for the actual steinlang syntax yet, but there are some example programs in the `lang/interpreter/pgms` subdirectory which are ASCII protobuf syntax trees.
-
-It's possible to write new syntax trees, but it's a pain in the buns.
-
-The `interpreter_main` binary can evaluate them, print any output printed by the program, and print some timing information.
-To build:
+Run the `interpreter_main` binary to parse and evaluate programs from stdin, and print some timing information.
+Ex:
 ```
 $ mkdir build && cd build
 $ cmake ..
 $ make
 $ cd lang/interpreter
-$ ./interpreter_main.exe --input_file=pgms/fibo_test.txt
+$ echo "print \"hello, world!\";" | ./interpreter_main.exe
 ```
 
-The `--debug_print_steps` flag prints verbose state at each evaluation step: evaluation stack, result stack, and local environment map.
+There are a number of flags available to print debug information:
+
+*  --debug\_print\_steps: print verbose evaluation state at each evaluation step (eval stack, result stack, local environment map)
+
+*  --debug\_print\_parse\_trees: print the parse tree of the parsed input program
+
+*  --debug\_print\_syntax\_tree: print the ascii protobuf syntax tree resulting from the parse tree
+
+There are also a number of flags to tweak protobuf arena allocation performance. Run `interpreter_main.exe --help` for a full list of available flags.
 
 ### Serialization
 
@@ -30,7 +34,7 @@ To combat memory allocation slowness, the evaluator uses an arena to allocate ne
 
 ### Parser
 
-Support for a custom recursive descent parser is WIP.
+The steinlang interpreter's parser is built on a homebrew recursive descent parser.
 Currently, there's support for defining context-free grammars (without left recursion) in text format, and generating a recursive descent parser from that definition.
 For example, the grammar defining the language of exclamations ("ahh", "AAAAHHHH", etc):
 ```
@@ -41,7 +45,7 @@ exclamation -> a+ h+ ;
 $ echo "AAAAHHH" | ./cfg_parser_main.exe --start_symbol=exclamation --grammar_def=ahh.cfg.txt --ignore_regex="\\s+"
 ```
 
-The full syntax recognized by the context-free grammar parser is in lang/data/grammar_def.cfg.txt:
+The full syntax recognized by the context-free grammar parser is in lang/data/grammar\_def.cfg.txt:
 ```
 produces : '->' | '::=' | ':' | '=' ;
 int : "\\d+" ;
