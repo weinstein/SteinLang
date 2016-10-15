@@ -334,7 +334,7 @@ void Evaluator::Evaluate(FuncAppExpression* func_app_exp) {
       func_app_exp->arg_size());
   Schedule()->unsafe_arena_set_allocated_exp(
       func_app_exp->unsafe_arena_release_func());
-  for (int i = 0; i < func_app_exp->arg_size(); ++i) {
+  for (int i = func_app_exp->arg_size(); i-- > 0;) {
     Schedule()->unsafe_arena_set_allocated_exp(
         func_app_exp->mutable_arg()->UnsafeArenaReleaseLast());
   }
@@ -345,7 +345,7 @@ void Evaluator::Evaluate(FuncAppExpFinal* fnl) {
   Closure* closure = func_val->mutable_closure_val();
   std::vector<PoolPtr<Literal>> arg_results;
   for (int i = 0; i < fnl->num_args(); ++i) {
-    arg_results.emplace_back(ValueOf(PopResultOrDie()));
+    arg_results.emplace(arg_results.begin(), ValueOf(PopResultOrDie()));
   }
 
   SaveLocalContext();
