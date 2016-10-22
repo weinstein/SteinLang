@@ -266,8 +266,7 @@ void Evaluator::Evaluate(TupleExpFinal* fnl) {
 void Evaluator::Evaluate(LambdaExpression* lambda_exp) {
   Closure* closure = AddResult()->mutable_rvalue()->mutable_closure_val();
   closure->mutable_param()->UnsafeArenaSwap(lambda_exp->mutable_param());
-  closure->add_body()->unsafe_arena_set_allocated_ret_stmt(
-      lambda_exp->unsafe_arena_release_body());
+  closure->mutable_body()->UnsafeArenaSwap(lambda_exp->mutable_body());
   *closure->mutable_env() = ctx_->cur_ctx().env();
 }
 

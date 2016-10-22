@@ -138,9 +138,9 @@ void PoolingArenaAllocator::Copy(const TupleExpression& tuple_exp,
 void PoolingArenaAllocator::Copy(const LambdaExpression& lambda_exp,
                                  LambdaExpression* dst) {
   *dst->mutable_param() = lambda_exp.param();
-  PoolPtr<Expression> body_dst = Allocate<Expression>();
-  Copy(lambda_exp.body(), body_dst.get());
-  dst->unsafe_arena_set_allocated_body(body_dst.release());
+  for (const Statement& s : lambda_exp.body()) {
+    Copy(s, dst->add_body());
+  }
 }
 
 void PoolingArenaAllocator::Copy(const Statement& stmt, Statement* dst) {

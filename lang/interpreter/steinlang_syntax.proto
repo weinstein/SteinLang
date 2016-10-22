@@ -85,7 +85,7 @@ message TupleExpression {
 
 message LambdaExpression {
   repeated Variable param = 1;
-  Expression body = 2;
+  repeated Statement body = 2;
 }
 
 message Expression {

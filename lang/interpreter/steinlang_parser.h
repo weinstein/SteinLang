@@ -42,6 +42,7 @@ enum class TokenTag {
   PRINT,
   WHILE,
   FOR,
+  DEF,
   EQ,
   SEMICOLON,
   UNKNOWN,

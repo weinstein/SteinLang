@@ -34,6 +34,7 @@ Tokenizer::Tokenizer() {
   add_rule(TokenTag::ELSE, "else");
   add_rule(TokenTag::FOR, "for");
   add_rule(TokenTag::WHILE, "while");
+  add_rule(TokenTag::DEF, "def");
   add_rule(TokenTag::RETURN, "return");
   add_rule(TokenTag::PRINT, "print");
   add_rule(TokenTag::EQ, "=");
@@ -117,6 +118,9 @@ Parser::Parser()
                                Term::NonTerminal(VariableTag::VARLIST),
                                Term::Terminal(TokenTag::COLON),
                                Term::NonTerminal(VariableTag::EXPR)});
+  add_rule(VariableTag::EXPR, {Term::Terminal(TokenTag::LAMBDA),
+                               Term::NonTerminal(VariableTag::VARLIST),
+                               Term::NonTerminal(VariableTag::BLOCK)});
   add_rule(VariableTag::EXPR, {Term::NonTerminal(VariableTag::ARITH_EXPR),
                                Term::Terminal(TokenTag::IF),
                                Term::NonTerminal(VariableTag::ARITH_EXPR),
@@ -124,18 +128,17 @@ Parser::Parser()
                                Term::NonTerminal(VariableTag::ARITH_EXPR)});
   add_rule(VariableTag::EXPR, {Term::NonTerminal(VariableTag::ARITH_EXPR)});
 
+  add_rule(VariableTag::BLOCK,
+           {Term::Terminal(TokenTag::LBRACE),
+            {Cardinality::Any(), Term::NonTerminal(VariableTag::STMT)},
+            Term::Terminal(TokenTag::RBRACE)});
+
   add_rule(VariableTag::STMT, {Term::Terminal(TokenTag::RETURN),
                                Term::NonTerminal(VariableTag::EXPR),
                                Term::Terminal(TokenTag::SEMICOLON)});
   add_rule(VariableTag::STMT, {Term::Terminal(TokenTag::PRINT),
                                Term::NonTerminal(VariableTag::EXPR),
                                Term::Terminal(TokenTag::SEMICOLON)});
-  add_rule(VariableTag::STMT, {Term::NonTerminal(VariableTag::EXPR),
-                               Term::Terminal(TokenTag::SEMICOLON)});
-  add_rule(VariableTag::STMT,
-           {Term::NonTerminal(VariableTag::EXPR), Term::Terminal(TokenTag::EQ),
-            Term::NonTerminal(VariableTag::EXPR),
-            Term::Terminal(TokenTag::SEMICOLON)});
   add_rule(VariableTag::STMT, {Term::Terminal(TokenTag::WHILE),
                                Term::NonTerminal(VariableTag::EXPR),
                                Term::NonTerminal(VariableTag::BLOCK)});
@@ -152,11 +155,19 @@ Parser::Parser()
             Term::Terminal(TokenTag::SEMICOLON),
             Term::NonTerminal(VariableTag::STMT),
             Term::NonTerminal(VariableTag::BLOCK)});
-
-  add_rule(VariableTag::BLOCK,
-           {Term::Terminal(TokenTag::LBRACE),
-            {Cardinality::Any(), Term::NonTerminal(VariableTag::STMT)},
-            Term::Terminal(TokenTag::RBRACE)});
+  add_rule(VariableTag::STMT,
+           {Term::Terminal(TokenTag::DEF),
+            Term::Terminal(TokenTag::ID),
+            Term::Terminal(TokenTag::LPAREN),
+            {Cardinality::AtMost(1), Term::NonTerminal(VariableTag::VARLIST)},
+            Term::Terminal(TokenTag::RPAREN),
+            Term::NonTerminal(VariableTag::BLOCK)});
+  add_rule(VariableTag::STMT, {Term::NonTerminal(VariableTag::EXPR),
+                               Term::Terminal(TokenTag::SEMICOLON)});
+  add_rule(VariableTag::STMT,
+           {Term::NonTerminal(VariableTag::EXPR), Term::Terminal(TokenTag::EQ),
+            Term::NonTerminal(VariableTag::EXPR),
+            Term::Terminal(TokenTag::SEMICOLON)});
 
   add_rule(VariableTag::PGM,
            {{Cardinality::AtLeast(1), Term::NonTerminal(VariableTag::STMT)}});
@@ -214,7 +225,26 @@ Expression ToSyntax(const Parser::ParseTreeNode& node) {
   if (Match(node.children(), {TokenTag::LAMBDA, VariableTag::VARLIST,
                               TokenTag::COLON, VariableTag::EXPR},
             kIgnore, lambda_var_list, kIgnore, lambda_body)) {
-    *expr.mutable_lambda_exp()->mutable_body() = lambda_body;
+    *expr.mutable_lambda_exp()->add_body()->mutable_ret_stmt() = lambda_body;
+    for (const Variable& v : lambda_var_list) {
+      *expr.mutable_lambda_exp()->add_param() = v;
+    }
+    return expr;
+  }
+
+  std::vector<Statement> lambda_body_block;
+  if (Match(node.children(),
+            {TokenTag::LAMBDA, VariableTag::VARLIST, VariableTag::BLOCK},
+            kIgnore, lambda_var_list, lambda_body_block)) {
+    for (const Statement& body_stmt : lambda_body_block) {
+      *expr.mutable_lambda_exp()->add_body() = body_stmt;
+    }
+    // Add a "return None;" final statement to ensure the body always returns.
+    //*expr.mutable_lambda_exp()
+    //     ->add_body()
+    //     ->mutable_ret_stmt()
+    //     ->mutable_lit_exp()
+    //     ->set_none_val(true);
     for (const Variable& v : lambda_var_list) {
       *expr.mutable_lambda_exp()->add_param() = v;
     }
@@ -491,6 +521,28 @@ Statement ToSyntax(const Parser::ParseTreeNode& node) {
             *stmt.mutable_for_stmt()->mutable_inc(), body)) {
     for (const Statement& body_stmt : body) {
       *stmt.mutable_for_stmt()->add_body() = body_stmt;
+    }
+    return stmt;
+  }
+
+  Variable fn_var;
+  std::vector<Variable> params;
+  if (Match(node.children(),
+            {TokenTag::DEF, TokenTag::ID, TokenTag::LPAREN,
+             VariableTag::VARLIST, TokenTag::RPAREN, VariableTag::BLOCK},
+            kIgnore, fn_var, kIgnore, params, kIgnore, body) ||
+      Match(node.children(), {TokenTag::DEF, TokenTag::ID, TokenTag::LPAREN,
+                              TokenTag::RPAREN, VariableTag::BLOCK},
+            kIgnore, fn_var, kIgnore, kIgnore, body)) {
+    AssignStatement* assign_stmt = stmt.mutable_assign_stmt();
+    *assign_stmt->mutable_lhs()->mutable_var_exp() = fn_var;
+    LambdaExpression* lambda_exp =
+        assign_stmt->mutable_rhs()->mutable_lambda_exp();
+    for (const Variable& param : params) {
+      *lambda_exp->add_param() = param;
+    }
+    for (const Statement& body_stmt : body) {
+      *lambda_exp->add_body() = body_stmt;
     }
     return stmt;
   }

@@ -13,7 +13,11 @@ binop : '+' | '-' | '*' | '/'
       | '>=' | '>' | '<=' | '<' | '==' | '!='
       | '&&' | '||' ;
 arith_expr : monop atom_expr | atom_expr binop atom_expr | atom_expr ;
-expr : 'lambda' varlist ':' expr | arith_expr 'if' arith_expr 'else' arith_expr | arith_expr ;
+expr : 'lambda' varlist ':' expr
+     | 'lambda' varlist block
+     | arith_expr 'if' arith_expr 'else' arith_expr
+     | arith_expr
+     ;
 
 block : '{' stmt* '}' ;
 
@@ -21,6 +25,7 @@ stmt : 'return' expr ';' | 'print' expr ';'
      | 'while' expr block
      | 'if' expr block ['else' block]
      | 'for' stmt expr ';' stmt block
+     | 'def' id '(' varlist? ')' block
      | expr ';' | expr '=' expr ';'
      ;
 pgm : stmt+ ;
