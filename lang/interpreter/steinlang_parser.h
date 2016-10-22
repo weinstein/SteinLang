@@ -40,6 +40,8 @@ enum class TokenTag {
   ELSE,
   RETURN,
   PRINT,
+  WHILE,
+  FOR,
   EQ,
   SEMICOLON,
   UNKNOWN,
@@ -67,6 +69,7 @@ enum class VariableTag {
   BINOP,
   ARITH_EXPR,
   EXPR,
+  BLOCK,
   STMT,
   PGM,
 };

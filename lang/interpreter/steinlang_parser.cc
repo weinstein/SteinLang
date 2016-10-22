@@ -32,6 +32,8 @@ Tokenizer::Tokenizer() {
   add_rule(TokenTag::DBL_PIPE, R"(\|\|)");
   add_rule(TokenTag::IF, "if");
   add_rule(TokenTag::ELSE, "else");
+  add_rule(TokenTag::FOR, "for");
+  add_rule(TokenTag::WHILE, "while");
   add_rule(TokenTag::RETURN, "return");
   add_rule(TokenTag::PRINT, "print");
   add_rule(TokenTag::EQ, "=");
@@ -134,6 +136,27 @@ Parser::Parser()
            {Term::NonTerminal(VariableTag::EXPR), Term::Terminal(TokenTag::EQ),
             Term::NonTerminal(VariableTag::EXPR),
             Term::Terminal(TokenTag::SEMICOLON)});
+  add_rule(VariableTag::STMT, {Term::Terminal(TokenTag::WHILE),
+                               Term::NonTerminal(VariableTag::EXPR),
+                               Term::NonTerminal(VariableTag::BLOCK)});
+  add_rule(VariableTag::STMT,
+           {Term::Terminal(TokenTag::IF),
+            Term::NonTerminal(VariableTag::EXPR),
+            Term::NonTerminal(VariableTag::BLOCK),
+            {Cardinality::AtMost(1),
+             Term::Group({Term::Terminal(TokenTag::ELSE),
+                          Term::NonTerminal(VariableTag::BLOCK)})}});
+  add_rule(VariableTag::STMT,
+           {Term::Terminal(TokenTag::FOR), Term::NonTerminal(VariableTag::STMT),
+            Term::NonTerminal(VariableTag::EXPR),
+            Term::Terminal(TokenTag::SEMICOLON),
+            Term::NonTerminal(VariableTag::STMT),
+            Term::NonTerminal(VariableTag::BLOCK)});
+
+  add_rule(VariableTag::BLOCK,
+           {Term::Terminal(TokenTag::LBRACE),
+            {Cardinality::Any(), Term::NonTerminal(VariableTag::STMT)},
+            Term::Terminal(TokenTag::RBRACE)});
 
   add_rule(VariableTag::PGM,
            {{Cardinality::AtLeast(1), Term::NonTerminal(VariableTag::STMT)}});
@@ -410,6 +433,18 @@ BinArithOp ToSyntax(const Parser::ParseTreeNode& node) {
 }
 
 template <>
+std::vector<Statement> ToSyntax(const Parser::ParseTreeNode& node) {
+  std::vector<Statement> stmts;
+  for (const auto& child : node.children()) {
+    Statement stmt;
+    if (Match(child, VariableTag::STMT, stmt)) {
+      stmts.push_back(stmt);
+    }
+  }
+  return stmts;
+}
+
+template <>
 Statement ToSyntax(const Parser::ParseTreeNode& node) {
   Statement stmt;
   if (Match(node.children(),
@@ -422,6 +457,44 @@ Statement ToSyntax(const Parser::ParseTreeNode& node) {
             *stmt.mutable_print_stmt(), kIgnore)) {
     return stmt;
   }
+
+  std::vector<Statement> body;
+  if (Match(node.children(),
+            {TokenTag::WHILE, VariableTag::EXPR, VariableTag::BLOCK}, kIgnore,
+            *stmt.mutable_while_stmt()->mutable_cond(), body)) {
+    for (const Statement& body_stmt : body) {
+      *stmt.mutable_while_stmt()->add_body() = body_stmt;
+    }
+    return stmt;
+  }
+
+  std::vector<Statement> if_body, else_body;
+  if (Match(node.children(),
+            {TokenTag::IF, VariableTag::EXPR, VariableTag::BLOCK,
+             TokenTag::ELSE, VariableTag::BLOCK},
+            kIgnore, *stmt.mutable_if_else_stmt()->mutable_cond(), if_body,
+            kIgnore, else_body)) {
+    for (const Statement& if_stmt : if_body) {
+      *stmt.mutable_if_else_stmt()->add_if_stmts() = if_stmt;
+    }
+    for (const Statement& else_stmt : else_body) {
+      *stmt.mutable_if_else_stmt()->add_else_stmts() = else_stmt;
+    }
+    return stmt;
+  }
+
+  if (Match(node.children(),
+            {TokenTag::FOR, VariableTag::STMT, VariableTag::EXPR,
+             TokenTag::SEMICOLON, VariableTag::STMT, VariableTag::BLOCK},
+            kIgnore, *stmt.mutable_for_stmt()->mutable_init(),
+            *stmt.mutable_for_stmt()->mutable_cond(), kIgnore,
+            *stmt.mutable_for_stmt()->mutable_inc(), body)) {
+    for (const Statement& body_stmt : body) {
+      *stmt.mutable_for_stmt()->add_body() = body_stmt;
+    }
+    return stmt;
+  }
+
   if (Match(node.children(), {VariableTag::EXPR, TokenTag::SEMICOLON},
             *stmt.mutable_exp_stmt(), kIgnore)) {
     return stmt;

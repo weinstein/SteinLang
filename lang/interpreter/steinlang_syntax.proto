@@ -107,12 +107,33 @@ message AssignStatement {
   Expression rhs = 2;
 }
 
+message IfElseStatement {
+  Expression cond = 1;
+  repeated Statement if_stmts = 2;
+  repeated Statement else_stmts = 3;
+}
+
+message WhileStatement {
+  Expression cond = 1;
+  repeated Statement body = 2;
+}
+
+message ForStatement {
+  Statement init = 1;
+  Expression cond = 2;
+  Statement inc = 3;
+  repeated Statement body = 4;
+}
+
 message Statement {
   oneof type {
     Expression exp_stmt = 1;
     AssignStatement assign_stmt = 2;
     Expression ret_stmt = 3;
     Expression print_stmt = 4;
+    IfElseStatement if_else_stmt = 5;
+    WhileStatement while_stmt = 6;
+    ForStatement for_stmt = 7;
   }
   Origin origin = 20;
 }
@@ -139,26 +160,28 @@ message TupleExpFinal {
   int64 size = 1;
 }
 
-message IgnoreOneResult {
-}
+message IgnoreOneResult {}
 
-message AssignStmtFinal {
-}
+message AssignStmtFinal {}
+
+message IfElseStmtFinal {}
+
+message WhileStmtFinal {}
+
+message ForStmtFinal {}
 
 message FuncAppExpFinal {
   int64 num_args = 1;
 }
 
-message ReturnFromLocalContext {
-}
+message ReturnFromLocalContext {}
 
 message IfElseFinal {
   Computation if_case = 1;
   Computation else_case = 2;
 }
 
-message PrintFinal {
-}
+message PrintFinal {}
 
 // A Computation represents something that can be evaluated (rewritten).
 // The final result of evaluation is a Result for Expressions, or nothing at all
