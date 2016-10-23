@@ -177,8 +177,8 @@ message FuncAppExpFinal {
 message ReturnFromLocalContext {}
 
 message IfElseFinal {
-  Computation if_case = 1;
-  Computation else_case = 2;
+  repeated Computation if_case = 1;
+  repeated Computation else_case = 2;
 }
 
 message PrintFinal {}

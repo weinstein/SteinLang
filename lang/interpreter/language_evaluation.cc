@@ -310,11 +310,11 @@ void Evaluator::Evaluate(TernaryExpression* tern_exp) {
   PoolPtr<Computation> if_comp = allocator_->Allocate<Computation>();
   if_comp->unsafe_arena_set_allocated_exp(
       tern_exp->unsafe_arena_release_if_exp());
-  fnl->unsafe_arena_set_allocated_if_case(if_comp.release());
+  fnl->mutable_if_case()->UnsafeArenaAddAllocated(if_comp.release());
   PoolPtr<Computation> else_comp = allocator_->Allocate<Computation>();
   else_comp->unsafe_arena_set_allocated_exp(
       tern_exp->unsafe_arena_release_else_exp());
-  fnl->unsafe_arena_set_allocated_else_case(else_comp.release());
+  fnl->mutable_else_case()->UnsafeArenaAddAllocated(else_comp.release());
   Schedule()->unsafe_arena_set_allocated_exp(
       tern_exp->unsafe_arena_release_cond_exp());
 }
@@ -322,9 +322,13 @@ void Evaluator::Evaluate(TernaryExpression* tern_exp) {
 void Evaluator::Evaluate(IfElseFinal* fnl) {
   PoolPtr<Literal> cond_val = ValueOf(PopResultOrDie());
   if (cond_val->bool_val()) {
-    ScheduleAllocated(fnl->unsafe_arena_release_if_case());
+    while (!fnl->if_case().empty()) {
+      ScheduleAllocated(fnl->mutable_if_case()->UnsafeArenaReleaseLast());
+    }
   } else {
-    ScheduleAllocated(fnl->unsafe_arena_release_else_case());
+    while (!fnl->else_case().empty()) {
+      ScheduleAllocated(fnl->mutable_else_case()->UnsafeArenaReleaseLast());
+    }
   }
 }
 
