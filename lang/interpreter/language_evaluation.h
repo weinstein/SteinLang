@@ -65,6 +65,7 @@ class Evaluator {
   void Evaluate(LambdaExpression* lambda_exp);
 
   void Evaluate(Statement* stmt);
+  void Evaluate(IfElseStatement* if_else_stmt);
 
   void Evaluate(const BinExpFinal& fnl);
   void Evaluate(const MonExpFinal& fnl);

@@ -294,9 +294,39 @@ void Evaluator::Evaluate(Statement* stmt) {
       Schedule()->unsafe_arena_set_allocated_exp(
           stmt->unsafe_arena_release_print_stmt());
       break;
+    case Statement::kIfElseStmt:
+      Evaluate(stmt->mutable_if_else_stmt());
+      break;
     case Statement::TYPE_NOT_SET:
       break;
   }
+}
+
+void Evaluator::Evaluate(IfElseStatement* stmt) {
+  IfElseFinal* fnl = Schedule()->mutable_if_else_final();
+  google::protobuf::RepeatedPtrField<Computation> reversed_comps;
+  while (!stmt->if_stmts().empty()) {
+    PoolPtr<Computation> if_comp = allocator_->Allocate<Computation>();
+    if_comp->unsafe_arena_set_allocated_stmt(
+        stmt->mutable_if_stmts()->UnsafeArenaReleaseLast());
+    reversed_comps.UnsafeArenaAddAllocated(if_comp.release());
+  }
+  while (!reversed_comps.empty()) {
+    fnl->mutable_if_case()->UnsafeArenaAddAllocated(
+        reversed_comps.UnsafeArenaReleaseLast());
+  }
+  while (!stmt->else_stmts().empty()) {
+    PoolPtr<Computation> else_comp = allocator_->Allocate<Computation>();
+    else_comp->unsafe_arena_set_allocated_stmt(
+        stmt->mutable_else_stmts()->UnsafeArenaReleaseLast());
+    reversed_comps.UnsafeArenaAddAllocated(else_comp.release());
+  }
+  while (!reversed_comps.empty()) {
+    fnl->mutable_else_case()->UnsafeArenaAddAllocated(
+        reversed_comps.UnsafeArenaReleaseLast());
+  }
+
+  Schedule()->unsafe_arena_set_allocated_exp(stmt->unsafe_arena_release_cond());
 }
 
 void Evaluator::EvaluateAssignStmtFinal() {
