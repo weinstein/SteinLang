@@ -134,7 +134,6 @@ int main(int argc, char** argv) {
 
   steinlang::PoolingArenaAllocator allocator;
   steinlang::EvalContext* ctx = allocator.AllocateEvalContext();
-  for (std::string line; std::getline(std::cin, line) && Evaluate(line, ctx, &allocator);) {}
-
+  Evaluate(ReadStdIn(), ctx, &allocator);
   return 0;
 }
