@@ -174,6 +174,19 @@ void PoolingArenaAllocator::Copy(const Statement& stmt, Statement* dst) {
       dst->unsafe_arena_set_allocated_print_stmt(exp_dst.release());
       break;
     }
+    case Statement::kIfElseStmt: {
+      PoolPtr<Expression> cond_dst = Allocate<Expression>();
+      Copy(stmt.if_else_stmt().cond(), cond_dst.get());
+      dst->mutable_if_else_stmt()->unsafe_arena_set_allocated_cond(
+          cond_dst.release());
+      for (const Statement& s : stmt.if_else_stmt().if_stmts()) {
+        Copy(s, dst->mutable_if_else_stmt()->add_if_stmts());
+      }
+      for (const Statement& s : stmt.if_else_stmt().else_stmts()) {
+        Copy(s, dst->mutable_if_else_stmt()->add_else_stmts());
+      }
+      break;
+    }
     case Statement::TYPE_NOT_SET:
       break;
   }
