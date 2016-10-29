@@ -297,6 +297,12 @@ void Evaluator::Evaluate(Statement* stmt) {
     case Statement::kIfElseStmt:
       Evaluate(stmt->mutable_if_else_stmt());
       break;
+    case Statement::kWhileStmt:
+      Evaluate(stmt->mutable_while_stmt());
+      break;
+    case Statement::kForStmt:
+      Evaluate(stmt->mutable_for_stmt());
+      break;
     case Statement::TYPE_NOT_SET:
       break;
   }
@@ -327,6 +333,37 @@ void Evaluator::Evaluate(IfElseStatement* stmt) {
   }
 
   Schedule()->unsafe_arena_set_allocated_exp(stmt->unsafe_arena_release_cond());
+}
+
+void Evaluator::Evaluate(WhileStatement* while_stmt) {
+  // TODO: while is implemented by unrolling. This won't work for hotswapping.
+  PoolPtr<Expression> cond_cpy = allocator_->Allocate<Expression>();
+  allocator_->Copy(while_stmt->cond(), cond_cpy.get());
+
+  IfElseFinal* fnl = Schedule()->mutable_if_else_final();
+  for (const Statement& s : while_stmt->body()) {
+    PoolPtr<Computation> comp = allocator_->Allocate<Computation>();
+    allocator_->Copy(s, comp->mutable_stmt());
+    fnl->mutable_if_case()->UnsafeArenaAddAllocated(comp.release());
+  }
+  PoolPtr<Computation> repeat_while_stmt = allocator_->Allocate<Computation>();
+  repeat_while_stmt->mutable_stmt()->mutable_while_stmt()->UnsafeArenaSwap(while_stmt);
+  fnl->mutable_if_case()->UnsafeArenaAddAllocated(repeat_while_stmt.release());
+
+  Schedule()->unsafe_arena_set_allocated_exp(cond_cpy.release());
+}
+
+void Evaluator::Evaluate(ForStatement* for_stmt) {
+  // TODO: for is implemented by desugaring to while. This won't work for
+  // hotswapping.
+  WhileStatement* while_stmt = Schedule()->mutable_stmt()->mutable_while_stmt();
+  while_stmt->unsafe_arena_set_allocated_cond(
+      for_stmt->unsafe_arena_release_cond());
+  while_stmt->mutable_body()->UnsafeArenaSwap(for_stmt->mutable_body());
+  while_stmt->mutable_body()->UnsafeArenaAddAllocated(
+      for_stmt->unsafe_arena_release_inc());
+
+  Schedule()->unsafe_arena_set_allocated_stmt(for_stmt->unsafe_arena_release_init());
 }
 
 void Evaluator::EvaluateAssignStmtFinal() {

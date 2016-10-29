@@ -66,6 +66,8 @@ class Evaluator {
 
   void Evaluate(Statement* stmt);
   void Evaluate(IfElseStatement* if_else_stmt);
+  void Evaluate(WhileStatement* while_stmt);
+  void Evaluate(ForStatement* for_stmt);
 
   void Evaluate(const BinExpFinal& fnl);
   void Evaluate(const MonExpFinal& fnl);

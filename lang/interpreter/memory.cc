@@ -187,6 +187,30 @@ void PoolingArenaAllocator::Copy(const Statement& stmt, Statement* dst) {
       }
       break;
     }
+    case Statement::kWhileStmt: {
+      PoolPtr<Expression> cond_dst = Allocate<Expression>();
+      Copy(stmt.while_stmt().cond(), cond_dst.get());
+      dst->mutable_while_stmt()->unsafe_arena_set_allocated_cond(
+          cond_dst.release());
+      for (const Statement& s : stmt.while_stmt().body()) {
+        Copy(s, dst->mutable_while_stmt()->add_body());
+      }
+      break;
+    }
+    case Statement::kForStmt: {
+      Copy(stmt.for_stmt().init(), dst->mutable_for_stmt()->mutable_init());
+
+      PoolPtr<Expression> cond_dst = Allocate<Expression>();
+      Copy(stmt.for_stmt().cond(), cond_dst.get());
+      dst->mutable_for_stmt()->unsafe_arena_set_allocated_cond(
+          cond_dst.release());
+
+      Copy(stmt.for_stmt().inc(), dst->mutable_for_stmt()->mutable_inc());
+      for (const Statement& s : stmt.for_stmt().body()) {
+        Copy(s, dst->mutable_for_stmt()->add_body());
+      }
+      break;
+    }
     case Statement::TYPE_NOT_SET:
       break;
   }
