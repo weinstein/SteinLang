@@ -6,32 +6,15 @@
 
 namespace util {
 
-template <typename T1, typename T2>
-class OneOf;
+namespace internal {
+
+template <typename T, bool Trivial>
+class DestroyerImpl {};
 
 template <typename T>
-struct OneOfIs {
-  template <typename U>
-  bool operator()(const OneOf<T, U>& one_of) const;
+using Destroyer = DestroyerImpl<T, std::is_trivially_destructible<T>::value>;
 
-  template <typename U>
-  bool operator()(const OneOf<U, T>& one_of) const;
-};
-
-template <typename T>
-struct OneOfValue {
-  template <typename U>
-  T& operator()(OneOf<T, U>& one_of);
-
-  template <typename U>
-  const T& operator()(const OneOf<T, U>& one_of);
-
-  template <typename U>
-  T& operator()(OneOf<U, T>& one_of);
-
-  template <typename U>
-  const T& operator()(const OneOf<U, T>& one_of);
-};
+}  // namespace internal
 
 struct OfFirst {};
 struct OfSecond {};
@@ -39,18 +22,18 @@ struct OfSecond {};
 template <typename T1, typename T2>
 class OneOf {
  public:
-  //OneOf(const T1& x)
-  //    : payload_type_(PayloadType::kFirstType), x_(x) {}
   OneOf(const T1& x, OfFirst = OfFirst())
-      : payload_type_(PayloadType::kFirstType), x_(x) {}
-  //OneOf(T1&& x)
-  //  : payload_type_(PayloadType::kFirstType), x_(std::move(x)) {}
+      : payload_type_(PayloadType::kFirstType), x_(x) {
+    x_destroyer_.reset(&x_);
+  }
   OneOf(T1&& x, OfFirst = OfFirst())
-      : payload_type_(PayloadType::kFirstType), x_(x) {}
+      : payload_type_(PayloadType::kFirstType), x_(std::move(x)) {
+    x_destroyer_.reset(&x_);
+  }
   OneOf<T1, T2>& Assign(const T1& x, OfFirst = OfFirst()) {
     if (!is_first()) {
-      clear();
-      new (&x_) T1(x);
+      y_destroyer_.reset(nullptr);
+      x_destroyer_.reset(new (&x_) T1(x));
       payload_type_ = PayloadType::kFirstType;
     } else {
       x_ = x;
@@ -59,8 +42,8 @@ class OneOf {
   }
   OneOf<T1, T2>& Assign(T1&& x, OfFirst = OfFirst()) {
     if (!is_first()) {
-      clear();
-      new (&x_) T1(std::move(x));
+      y_destroyer_.reset(nullptr);
+      x_destroyer_.reset(new (&x_) T1(std::move(x)));
       payload_type_ = PayloadType::kFirstType;
     } else {
       x_ = std::move(x);
@@ -68,26 +51,28 @@ class OneOf {
     return *this;
   }
 
-  //OneOf(const T2& y) : payload_type_(PayloadType::kSecondType), y_(y) {}
   OneOf(const T2& y, OfSecond = OfSecond())
-      : payload_type_(PayloadType::kSecondType), y_(y) {}
-  //OneOf(T2&& y) : payload_type_(PayloadType::kSecondType), y_(std::move(y)) {}
+      : payload_type_(PayloadType::kSecondType), y_(y) {
+    y_destroyer_.reset(&y_);
+  }
   OneOf(T2&& y, OfSecond = OfSecond())
-      : payload_type_(PayloadType::kSecondType), y_(std::move(y)) {}
+      : payload_type_(PayloadType::kSecondType), y_(std::move(y)) {
+    y_destroyer_.reset(&y_);
+  }
   OneOf<T1, T2>& Assign(const T2& y, OfSecond = OfSecond()) {
     if (!is_second()) {
-      clear();
-      new (&y_) T2(y);
+      x_destroyer_.reset(nullptr);
+      y_destroyer_.reset(new (&y_) T2(y));
       payload_type_ = PayloadType::kSecondType;
     } else {
-      y_ = std::move(y);
+      y_ = y;
     }
     return *this;
   }
   OneOf<T1, T2>& Assign(T2&& y, OfSecond = OfSecond()) {
     if (!is_second()) {
-      clear();
-      new (&y_) T2(std::move(y));
+      x_destroyer_.reset(nullptr);
+      y_destroyer_.reset(new (&y_) T2(std::move(y)));
       payload_type_ = PayloadType::kSecondType;
     } else {
       y_ = std::move(y);
@@ -97,16 +82,16 @@ class OneOf {
 
   OneOf(const OneOf<T1, T2>& other) : payload_type_(other.payload_type_) {
     if (is_first()) {
-      new (&x_) T1(other.x_);
+      x_destroyer_.reset(new (&x_) T1(other.x_));
     } else {
-      new (&y_) T2(other.y_);
+      y_destroyer_.reset(new (&y_) T2(other.y_));
     }
   }
   OneOf(OneOf<T1, T2>&& other) : payload_type_(other.payload_type_) {
     if (is_first()) {
-      new (&x_) T1(std::move(other.x_));
+      x_destroyer_.reset(new (&x_) T1(std::move(other.x_)));
     } else {
-      new (&y_) T2(std::move(other.y_));
+      y_destroyer_.reset(new (&y_) T2(std::move(other.y_)));
     }
   }
 
@@ -143,76 +128,64 @@ class OneOf {
     return payload_type_ == PayloadType::kSecondType;
   }
 
-  template <typename T>
-  bool is() const { return OneOfIs<T>()(*this); }
-
-  template <typename T>
-  T& value() { return OneOfValue<T>()(*this); }
-
-  template <typename T>
-  const T& value() const {
-    return OneOfValue<T>()(*this);
-  }
-
-  ~OneOf() {
-    clear();
-  }
-
+  ~OneOf() {}
 
  private:
-  void clear() {
-    if (is_first()) {
-      x_.~T1();
-    } else {
-      y_.~T2();
-    }
-  }
-
   enum class PayloadType { kFirstType, kSecondType };
-
   PayloadType payload_type_;
+
   union {
     T1 x_;
     T2 y_;
   };
 
+  internal::Destroyer<T1> x_destroyer_;
+  internal::Destroyer<T2> y_destroyer_;
+};
+
+namespace internal {
+
+template <typename T>
+class DestroyerImpl<T, false> {
+ public:
+  DestroyerImpl() : x_(nullptr) {}
+  explicit DestroyerImpl(T* x) : x_(x) {}
+
+  ~DestroyerImpl() { destroy(); }
+
+  T* release() { T* y = x_; x_ = nullptr; return y; }
+
+  void reset(T* x) { destroy(); x_ = x; }
+
+  T* get() { return x_; }
+
+ private:
+  void destroy() {
+    if (x_ != nullptr) {
+      x_->~T();
+    }
+  }
+
+  T* x_;
 };
 
 template <typename T>
-template <typename U>
-bool OneOfIs<T>::operator()(const OneOf<T, U>& one_of) const {
-  return one_of.is_first();
-}
+class DestroyerImpl<T, true> {
+ public:
+  constexpr DestroyerImpl() : x_(nullptr) {}
+  explicit constexpr DestroyerImpl(T* x) : x_(x) {}
 
-template <typename T>
-template <typename U>
-bool OneOfIs<T>::operator()(const OneOf<U, T>& one_of) const {
-  return one_of.is_second();
-}
+  T* release() { T* y = x_; x_ = nullptr; return y; }
 
-template <typename T>
-template <typename U>
-T& OneOfValue<T>::operator()(OneOf<T, U>& one_of) {
-  return one_of.mutable_first();
-}
+  void reset(T* x) { x_ = x; }
 
-template <typename T>
-template <typename U>
-T& OneOfValue<T>::operator()(OneOf<U, T>& one_of) {
-  return one_of.mutable_second();
-}
+  T* get() { return x_; }
 
-template <typename T>
-template <typename U>
-const T& OneOfValue<T>::operator()(const OneOf<T, U>& one_of) {
-  return one_of.first();
-}
+ private:
+  T* x_;
+};
 
-template <typename T>
-template <typename U>
-const T& OneOfValue<T>::operator()(const OneOf<U, T>& one_of) {
-  return one_of.second();
-}
+}  // namespace internal
 
 }  // namespace util
 
