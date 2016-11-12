@@ -8,12 +8,6 @@
 namespace util {
 
 template <typename It>
-struct Modification {
-  It lhs;
-  It rhs;
-};
-
-template <typename It>
 class SequenceDiffer {
  public:
   struct Addition {
