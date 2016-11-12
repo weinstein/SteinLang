@@ -18,12 +18,6 @@ DEFINE_bool(debug_print_timing, false, "");
 
 namespace {
 
-std::string ReadStdIn() {
-  std::stringstream ss;
-  ss << std::cin.rdbuf();
-  return ss.str();
-}
-
 template <typename Lexer, typename Parser>
 util::Optional<typename Parser::ParseTreeNode> LexAndParse(
     const std::string& text, const Lexer& lexer, const Parser& parser) {
@@ -134,6 +128,6 @@ int main(int argc, char** argv) {
 
   steinlang::PoolingArenaAllocator allocator;
   steinlang::EvalContext* ctx = allocator.AllocateEvalContext();
-  Evaluate(ReadStdIn(), ctx, &allocator);
+  Evaluate(util::ReadStdInToString(), ctx, &allocator);
   return 0;
 }

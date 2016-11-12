@@ -5,19 +5,7 @@
 #include <string>
 
 #include "util/diff.h"
-
-namespace {
-
-std::vector<std::string> ReadFileLines(const std::string& fname) {
-  std::ifstream fs(fname);
-  std::vector<std::string> result;
-  for (std::string line; std::getline(fs, line); ) {
-    result.push_back(line);
-  }
-  return result;
-}
-
-}  // namespace
+#include "util/file_io.h"
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -26,8 +14,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  const std::vector<std::string> lhs = ReadFileLines(argv[1]);
-  const std::vector<std::string> rhs = ReadFileLines(argv[2]);
+  const std::vector<std::string> lhs = util::ReadFileLines(argv[1]);
+  const std::vector<std::string> rhs = util::ReadFileLines(argv[2]);
   const auto difference = util::Diff(lhs, rhs);
   for (const auto& mod : difference) {
     if (mod.is_addition()) {

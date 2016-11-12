@@ -5,6 +5,7 @@
 #include <string>
 
 #include "lang/cfg_parser.h"
+#include "util/file_io.h"
 #include "util/optional.h"
 
 DEFINE_string(grammar_def, "", "file containing the grammar definition");
@@ -17,19 +18,6 @@ DEFINE_bool(debug_print_parse_trees, false,
             "definitions or inputs");
 
 namespace {
-
-std::string ReadStdIn() {
-  std::stringstream ss;
-  ss << std::cin.rdbuf();
-  return ss.str();
-}
-
-std::string ReadFile(const std::string& fname) {
-  std::ifstream fs(fname);
-  std::stringstream ss;
-  ss << fs.rdbuf();
-  return ss.str();
-}
 
 template <typename Lexer, typename Parser>
 util::Optional<typename Parser::ParseTreeNode> LexAndParse(
@@ -66,7 +54,8 @@ int main(int argc, char** argv) {
   lang::CfgTokenizer cfg_tokenizer;
   lang::CfgParser cfg_parser;
   const util::Optional<lang::CfgParser::ParseTreeNode> cfg_parse_result =
-      LexAndParse(ReadFile(FLAGS_grammar_def), cfg_tokenizer, cfg_parser);
+      LexAndParse(util::ReadFileToString(FLAGS_grammar_def), cfg_tokenizer,
+                  cfg_parser);
   if (!cfg_parse_result.is_present()) {
     std::cout << "failed to parse grammar definition.\n";
     return 1;
@@ -78,8 +67,9 @@ int main(int argc, char** argv) {
     parsed_grammar.tokenizer.ignore_rule(FLAGS_ignore_regex);
   }
   const util::Optional<lang::ParsedGrammar::Parser::ParseTreeNode>
-      input_parse_result = LexAndParse(ReadStdIn(), parsed_grammar.tokenizer,
-                                       parsed_grammar.parser);
+      input_parse_result =
+          LexAndParse(util::ReadStdInToString(), parsed_grammar.tokenizer,
+                      parsed_grammar.parser);
   if (!input_parse_result.is_present()) {
     std::cout << "failed to parse input.\n";
     return 1;
