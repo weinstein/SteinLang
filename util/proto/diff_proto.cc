@@ -4,26 +4,26 @@ namespace util {
 
 namespace {
 
-void WalkFields(google::protobuf::Message* msg, std::vector<ProtoDiffer::Field>* out) {
-  const google::protobuf::Descriptor* desc = msg->GetDescriptor();
+void WalkFields(google::protobuf::Message* msg,
+                std::vector<ProtoDiffer::Field>* out) {
   const google::protobuf::Reflection* refl = msg->GetReflection();
-  for (auto i = 0; i < desc->field_count(); ++i) {
-    const google::protobuf::FieldDescriptor* field_desc = desc->field(i);
-    if (field_desc->cpp_type() ==
-        google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
-      if (field_desc->is_repeated()) {
-        const auto num_repeated = refl->FieldSize(*msg, field_desc);
-        for (auto j = 0; j < num_repeated; ++j) {
-          google::protobuf::Message* child =
-              refl->MutableRepeatedMessage(msg, field_desc, j);
-          out->push_back(ProtoDiffer::Field{msg, field_desc, j, child});
-          WalkFields(child, out);
+  std::vector<const google::protobuf::FieldDescriptor*> set_fields;
+  refl->ListFields(*msg, &set_fields);
+  for (const google::protobuf::FieldDescriptor* field_desc : set_fields) {
+    if (field_desc->is_repeated()) {
+      const auto num_repeated = refl->FieldSize(*msg, field_desc);
+      for (auto j = 0; j < num_repeated; ++j) {
+        out->push_back(ProtoDiffer::Field{msg, field_desc, j});
+        if (field_desc->cpp_type() ==
+            google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+          WalkFields(refl->MutableRepeatedMessage(msg, field_desc, j), out);
         }
-      } else if (refl->HasField(*msg, field_desc)) {
-        google::protobuf::Message* child =
-            refl->MutableMessage(msg, field_desc);
-        out->push_back(ProtoDiffer::Field{msg, field_desc, -1, child});
-        WalkFields(child, out);
+      }
+    } else {
+      out->push_back(ProtoDiffer::Field{msg, field_desc, -1});
+      if (field_desc->cpp_type() ==
+          google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+        WalkFields(refl->MutableMessage(msg, field_desc), out);
       }
     }
   }
@@ -40,13 +40,101 @@ bool IsSameType(const google::protobuf::Message& lhs,
   return lhs.GetDescriptor() == rhs.GetDescriptor();
 }
 
+bool IsSameScalarValue(const google::protobuf::Message& lhs,
+                       const google::protobuf::Message& rhs,
+                       const google::protobuf::FieldDescriptor* field) {
+  if (lhs.GetDescriptor() != rhs.GetDescriptor()) {
+    return false;
+  }
+  const google::protobuf::Reflection* lhs_refl = lhs.GetReflection();
+  const google::protobuf::Reflection* rhs_refl = rhs.GetReflection();
+
+  using FieldDescriptor = google::protobuf::FieldDescriptor;
+  switch (field->cpp_type()) {
+    case FieldDescriptor::CPPTYPE_INT32:
+      return lhs_refl->GetInt32(lhs, field) == rhs_refl->GetInt32(rhs, field);
+    case FieldDescriptor::CPPTYPE_INT64:
+      return lhs_refl->GetInt64(lhs, field) == rhs_refl->GetInt64(rhs, field);
+    case FieldDescriptor::CPPTYPE_UINT32:
+      return lhs_refl->GetUInt32(lhs, field) == rhs_refl->GetUInt32(rhs, field);
+    case FieldDescriptor::CPPTYPE_UINT64:
+      return lhs_refl->GetUInt64(lhs, field) == rhs_refl->GetUInt64(rhs, field);
+    case FieldDescriptor::CPPTYPE_FLOAT:
+      return lhs_refl->GetFloat(lhs, field) == rhs_refl->GetFloat(rhs, field);
+    case FieldDescriptor::CPPTYPE_DOUBLE:
+      return lhs_refl->GetDouble(lhs, field) == rhs_refl->GetDouble(rhs, field);
+    case FieldDescriptor::CPPTYPE_BOOL:
+      return lhs_refl->GetBool(lhs, field) == rhs_refl->GetBool(rhs, field);
+    case FieldDescriptor::CPPTYPE_ENUM:
+      return lhs_refl->GetEnum(lhs, field) == rhs_refl->GetEnum(rhs, field);
+    case FieldDescriptor::CPPTYPE_STRING:
+      return lhs_refl->GetString(lhs, field) == rhs_refl->GetString(rhs, field);
+    case FieldDescriptor::CPPTYPE_MESSAGE:
+      return IsSameType(lhs_refl->GetMessage(lhs, field),
+                        rhs_refl->GetMessage(rhs, field));
+  }
+}
+
+bool IsSameRepeatedValue(const google::protobuf::Message& lhs, int lhs_i,
+                         const google::protobuf::Message& rhs, int rhs_i,
+                         const google::protobuf::FieldDescriptor* field) {
+  if (lhs.GetDescriptor() != rhs.GetDescriptor()) {
+    return false;
+  }
+  const google::protobuf::Reflection* lhs_refl = lhs.GetReflection();
+  const google::protobuf::Reflection* rhs_refl = rhs.GetReflection();
+
+  using FieldDescriptor = google::protobuf::FieldDescriptor;
+  switch (field->cpp_type()) {
+    case FieldDescriptor::CPPTYPE_INT32:
+      return lhs_refl->GetRepeatedInt32(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedInt32(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_INT64:
+      return lhs_refl->GetRepeatedInt64(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedInt64(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_UINT32:
+      return lhs_refl->GetRepeatedUInt32(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedUInt32(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_UINT64:
+      return lhs_refl->GetRepeatedUInt64(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedUInt64(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_FLOAT:
+      return lhs_refl->GetRepeatedFloat(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedFloat(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_DOUBLE:
+      return lhs_refl->GetRepeatedDouble(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedDouble(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_BOOL:
+      return lhs_refl->GetRepeatedBool(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedBool(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_ENUM:
+      return lhs_refl->GetRepeatedEnum(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedEnum(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_STRING:
+      return lhs_refl->GetRepeatedString(lhs, field, lhs_i) ==
+             rhs_refl->GetRepeatedString(rhs, field, rhs_i);
+    case FieldDescriptor::CPPTYPE_MESSAGE:
+      return IsSameType(lhs_refl->GetRepeatedMessage(lhs, field, lhs_i),
+                        rhs_refl->GetRepeatedMessage(rhs, field, rhs_i));
+  }
+}
+
 }  // namespace
 
 bool ProtoDiffer::FieldEq::operator()(const Field& lhs,
                                       const Field& rhs) const {
-  return IsSameType(*lhs.parent, *rhs.parent) &&
-         lhs.parent_field == rhs.parent_field && lhs.index == rhs.index &&
-         IsSameType(*lhs.child, *rhs.child);
+  if (!IsSameType(*lhs.parent, *rhs.parent)) {
+    return false;
+  }
+  if (lhs.parent_field != rhs.parent_field) {
+    return false;
+  }
+  if (lhs.parent_field->is_repeated()) {
+    return IsSameRepeatedValue(*lhs.parent, lhs.index, *rhs.parent, rhs.index,
+                               lhs.parent_field);
+  } else {
+    return IsSameScalarValue(*lhs.parent, *rhs.parent, lhs.parent_field);
+  }
 }
 
 std::vector<ProtoDiffer::Modification> ProtoDiffer::Diff(

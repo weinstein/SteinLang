@@ -16,7 +16,6 @@ class ProtoDiffer {
     google::protobuf::Message* parent;
     const google::protobuf::FieldDescriptor* parent_field;
     int index;
-    google::protobuf::Message* child;
   };
 
   struct Modification {

@@ -84,9 +84,6 @@ int main(int argc, char** argv) {
     if (m.field.index >= 0) {
       std::cout << "  index: [" << m.field.index << "]\n";
     }
-
-    std::cout << "  child:\n";
-    std::cout << m.field.child->DebugString();
   }
   return 0;
 }
