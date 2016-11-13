@@ -47,3 +47,16 @@ target_link_libraries(
   util
   gflags
 )
+
+add_executable(
+  pgm_diff_tool.exe
+  pgm_diff_tool.cc
+)
+target_link_libraries(
+  pgm_diff_tool.exe
+  steinlang_parser
+  steinlang_syntax_proto
+  diff_proto
+  util
+  gflags
+)

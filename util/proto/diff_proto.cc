@@ -42,12 +42,12 @@ bool IsSameType(const google::protobuf::Message& lhs,
 
 }  // namespace
 
-bool ProtoDiffer::FieldEq::operator()(const Field& lhs, const Field& rhs) const {
+bool ProtoDiffer::FieldEq::operator()(const Field& lhs,
+                                      const Field& rhs) const {
   return IsSameType(*lhs.parent, *rhs.parent) &&
          lhs.parent_field == rhs.parent_field && lhs.index == rhs.index &&
          IsSameType(*lhs.child, *rhs.child);
 }
-
 
 std::vector<ProtoDiffer::Modification> ProtoDiffer::Diff(
     google::protobuf::Message* lhs, google::protobuf::Message* rhs) {

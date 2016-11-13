@@ -25,6 +25,9 @@ class ProtoDiffer {
       kDeletion,
     };
 
+    bool is_addition() const { return kind == kAddition; }
+    bool is_deletion() const { return kind == kDeletion; }
+
     Kind kind;
     Field field;
   };
