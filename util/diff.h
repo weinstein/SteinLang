@@ -1,3 +1,4 @@
+#include <functional>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -7,16 +8,23 @@
 
 namespace util {
 
-template <typename It>
+template <typename ContainerTy,
+          typename Eq = std::equal_to<typename ContainerTy::value_type>>
 class SequenceDiffer {
  public:
+  typedef typename ContainerTy::const_iterator Iterator;
+  typedef typename ContainerTy::value_type Value;
+
   struct Addition {
-    It insert_pos;
-    It data;
+    Iterator insert_pos;
+    Iterator data;
   };
+
   struct Deletion {
-    It delete_pos;
+    Iterator data;
+    Iterator remove_pos;
   };
+
   struct Modification {
     Modification(Addition a) : data(std::move(a)) {}
     Modification(Deletion d) : data(std::move(d)) {}
@@ -30,69 +38,57 @@ class SequenceDiffer {
     util::OneOf<Addition, Deletion> data;
   };
 
-  template <typename T>
-  std::vector<Modification> Diff(const T& lhs, const T& rhs);
+  std::vector<Modification> Diff(const ContainerTy& lhs, const ContainerTy& rhs);
 
  private:
-  static std::tuple<std::size_t, std::size_t> ToCacheKey(const It& lhs_begin,
-                                                         const It& lhs_end,
-                                                         const It& rhs_begin,
-                                                         const It& rhs_end) {
-    return std::make_tuple(lhs_end - lhs_begin, rhs_end - rhs_begin);
-  }
-
   struct ModSeqResult {
     util::Optional<Modification> head;
     const ModSeqResult* tail = nullptr;
     std::size_t len = 0;
   };
 
-  ModSeqResult Diff(const It& lhs_begin, const It& lhs_end, const It& rhs_begin,
-                    const It& rhs_end);
-
-  const ModSeqResult* Recurse(const It& lhs_begin, const It& lhs_end,
-                              const It& rhs_begin, const It& rhs_end) {
-    const auto& key = ToCacheKey(lhs_begin, lhs_end, rhs_begin, rhs_end);
-    auto it = cached_seqs_.find(key);
-    if (it == cached_seqs_.end()) {
-      it = cached_seqs_
-               .emplace(key, Diff(lhs_begin, lhs_end, rhs_begin, rhs_end))
-               .first;
-    }
-    return &(it->second);
+  static std::tuple<std::size_t, std::size_t> ToCacheKey(
+      const Iterator& lhs_begin, const Iterator& lhs_end,
+      const Iterator& rhs_begin, const Iterator& rhs_end) {
+    return std::make_tuple(lhs_end - lhs_begin, rhs_end - rhs_begin);
   }
 
-  ModSeqResult MakeModification(const It& lhs_begin, const It& lhs_end,
-                                const It& rhs_begin, const It& rhs_end,
-                                util::Optional<Modification> m) {
-    std::size_t len = 0;
-    const ModSeqResult* tail;
-    if (m.is_present()) {
-      tail = m.value().is_addition()
-                 ? Recurse(lhs_begin, lhs_end, rhs_begin + 1, rhs_end)
-                 : Recurse(lhs_begin + 1, lhs_end, rhs_begin, rhs_end);
-      len = 1 + tail->len;
-    } else {
-      tail = Recurse(lhs_begin + 1, lhs_end, rhs_begin + 1, rhs_end);
-      len = tail->len;
-    }
-    return ModSeqResult{std::move(m), tail, len};
-  }
+  ModSeqResult Diff(const Iterator& lhs_begin,
+                    const Iterator& lhs_end,
+                    const Iterator& rhs_begin,
+                    const Iterator& rhs_end);
 
-  ModSeqResult MakeAddition(const It& lhs_begin, const It& lhs_end,
-                            const It& rhs_begin, const It& rhs_end) {
+  const ModSeqResult* Recurse(const Iterator& lhs_begin,
+                              const Iterator& lhs_end,
+                              const Iterator& rhs_begin,
+                              const Iterator& rhs_end);
+
+  ModSeqResult MakeModification(const Iterator& lhs_begin,
+                                const Iterator& lhs_end,
+                                const Iterator& rhs_begin,
+                                const Iterator& rhs_end,
+                                util::Optional<Modification> m);
+
+  ModSeqResult MakeAddition(const Iterator& lhs_begin,
+                            const Iterator& lhs_end,
+                            const Iterator& rhs_begin,
+                            const Iterator& rhs_end) {
     return MakeModification(lhs_begin, lhs_end, rhs_begin, rhs_end,
                             {Addition{lhs_begin, rhs_begin}});
   }
 
-  ModSeqResult MakeDeletion(const It& lhs_begin, const It& lhs_end,
-                            const It& rhs_begin, const It& rhs_end) {
+  ModSeqResult MakeDeletion(const Iterator& lhs_begin,
+                            const Iterator& lhs_end,
+                            const Iterator& rhs_begin,
+                            const Iterator& rhs_end) {
     return MakeModification(lhs_begin, lhs_end, rhs_begin, rhs_end,
-                            {Deletion{lhs_begin}});
+                            {Deletion{lhs_begin, rhs_begin}});
   }
 
-  ModSeqResult MakeNoModification(const It& lhs_begin, const It& lhs_end,
-                                  const It& rhs_begin, const It& rhs_end) {
+  ModSeqResult MakeNoModification(const Iterator& lhs_begin,
+                                  const Iterator& lhs_end,
+                                  const Iterator& rhs_begin,
+                                  const Iterator& rhs_end) {
     return MakeModification(lhs_begin, lhs_end, rhs_begin, rhs_end,
                             util::EmptyOptional());
   }
@@ -105,21 +101,59 @@ class SequenceDiffer {
     }
   };
 
+  const Eq eq_ = Eq();
+
   std::unordered_map<std::tuple<std::size_t, std::size_t>, ModSeqResult,
                      SeqCacheKeyHasher>
       cached_seqs_;
 };
 
-template <typename T>
-std::vector<typename SequenceDiffer<typename T::const_iterator>::Modification>
-Diff(const T& lhs, const T& rhs) {
-  return SequenceDiffer<typename T::const_iterator>().Diff(lhs, rhs);
+template <typename ContainerTy,
+          typename Eq = std::equal_to<typename ContainerTy::value_type>>
+std::vector<typename SequenceDiffer<ContainerTy, Eq>::Modification> DiffSeqs(
+    const ContainerTy& lhs, const ContainerTy& rhs) {
+  return SequenceDiffer<ContainerTy, Eq>().Diff(lhs, rhs);
 }
 
-template <typename It>
-template <typename T>
-std::vector<typename SequenceDiffer<It>::Modification> SequenceDiffer<It>::Diff(
-    const T& lhs, const T& rhs) {
+template <typename ContainerTy, typename Eq>
+const typename SequenceDiffer<ContainerTy, Eq>::ModSeqResult*
+SequenceDiffer<ContainerTy, Eq>::Recurse(const Iterator& lhs_begin,
+                                         const Iterator& lhs_end,
+                                         const Iterator& rhs_begin,
+                                         const Iterator& rhs_end) {
+  const auto& key = ToCacheKey(lhs_begin, lhs_end, rhs_begin, rhs_end);
+  auto it = cached_seqs_.find(key);
+  if (it == cached_seqs_.end()) {
+    it = cached_seqs_.emplace(key, Diff(lhs_begin, lhs_end, rhs_begin, rhs_end))
+             .first;
+  }
+  return &(it->second);
+}
+
+template <typename ContainerTy, typename Eq>
+typename SequenceDiffer<ContainerTy, Eq>::ModSeqResult
+SequenceDiffer<ContainerTy, Eq>::MakeModification(
+    const Iterator& lhs_begin, const Iterator& lhs_end,
+    const Iterator& rhs_begin, const Iterator& rhs_end,
+    util::Optional<Modification> m) {
+  std::size_t len = 0;
+  const ModSeqResult* tail;
+  if (m.is_present()) {
+    tail = m.value().is_addition()
+               ? Recurse(lhs_begin, lhs_end, rhs_begin + 1, rhs_end)
+               : Recurse(lhs_begin + 1, lhs_end, rhs_begin, rhs_end);
+    len = 1 + tail->len;
+  } else {
+    tail = Recurse(lhs_begin + 1, lhs_end, rhs_begin + 1, rhs_end);
+    len = tail->len;
+  }
+  return ModSeqResult{std::move(m), tail, len};
+}
+
+template <typename ContainerTy, typename Eq>
+std::vector<typename SequenceDiffer<ContainerTy, Eq>::Modification>
+SequenceDiffer<ContainerTy, Eq>::Diff(const ContainerTy& lhs,
+                                      const ContainerTy& rhs) {
   cached_seqs_.clear();
   const ModSeqResult* result_list =
       Recurse(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
@@ -133,10 +167,12 @@ std::vector<typename SequenceDiffer<It>::Modification> SequenceDiffer<It>::Diff(
   return result;
 }
 
-template <typename It>
-typename SequenceDiffer<It>::ModSeqResult SequenceDiffer<It>::Diff(
-    const It& lhs_begin, const It& lhs_end, const It& rhs_begin,
-    const It& rhs_end) {
+template <typename ContainerTy, typename Eq>
+typename SequenceDiffer<ContainerTy, Eq>::ModSeqResult
+SequenceDiffer<ContainerTy, Eq>::Diff(const Iterator& lhs_begin,
+                                      const Iterator& lhs_end,
+                                      const Iterator& rhs_begin,
+                                      const Iterator& rhs_end) {
   util::Optional<ModSeqResult> result;
   if (lhs_begin < lhs_end) {
     result = MakeDeletion(lhs_begin, lhs_end, rhs_begin, rhs_end);
@@ -147,7 +183,8 @@ typename SequenceDiffer<It>::ModSeqResult SequenceDiffer<It>::Diff(
       result = std::move(add_rhs);
     }
   }
-  if (lhs_begin < lhs_end && rhs_begin < rhs_end && *lhs_begin == *rhs_begin) {
+  if (lhs_begin < lhs_end && rhs_begin < rhs_end &&
+      eq_(*lhs_begin, *rhs_begin)) {
     ModSeqResult no_mod =
         MakeNoModification(lhs_begin, lhs_end, rhs_begin, rhs_end);
     if (!result.is_present() || no_mod.len < result.value().len) {

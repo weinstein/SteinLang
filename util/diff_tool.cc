@@ -16,15 +16,15 @@ int main(int argc, char** argv) {
 
   const std::vector<std::string> lhs = util::ReadFileLines(argv[1]);
   const std::vector<std::string> rhs = util::ReadFileLines(argv[2]);
-  const auto difference = util::Diff(lhs, rhs);
+  const auto difference = util::DiffSeqs(lhs, rhs);
   for (const auto& mod : difference) {
     if (mod.is_addition()) {
       std::cout << "[" << mod.addition().insert_pos - lhs.begin() << "]\t + "
                 << *mod.addition().data << "\n";
     }
     if (mod.is_deletion()) {
-      std::cout << "[" << mod.deletion().delete_pos - lhs.begin() << "]\t - "
-                << *mod.deletion().delete_pos << "\n";
+      std::cout << "[" << mod.deletion().data - lhs.begin() << "]\t - "
+                << *mod.deletion().data << "\n";
     }
   }
   return 0;
