@@ -1,8 +1,7 @@
 #include <gflags/gflags.h>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
+#include <vector>
 
 #include "util/diff.h"
 #include "util/file_io.h"
