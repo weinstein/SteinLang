@@ -65,25 +65,46 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  util::ProtoDiffer differ;
   const std::vector<util::ProtoDiffer::Modification> diffs =
-      util::ProtoDiffer().Diff(&lhs_pgm.mutable_value(),
-                               &rhs_pgm.mutable_value());
+      differ.Diff(&lhs_pgm.mutable_value(), &rhs_pgm.mutable_value());
   for (const auto& m : diffs) {
     if (m.is_addition()) {
       std::cout << "Addition:\n";
-    } else {
+    } else if (m.is_deletion()) {
       std::cout << "Deletion:\n";
+    } else {
+      std::cout << "Equals:\n";
     }
 
-    std::cout << "  parent:\n";
-    std::cout << m.field.parent->DebugString();
+    if ((m.is_deletion() || !m.is_change()) && m.lhs != differ.lhs_end()) {
+      std::cout << "  lhs parent: ("
+                << m.lhs->parent->GetDescriptor()->full_name() << ")\n";
+      std::cout << m.lhs->parent->DebugString();
 
-    std::cout << "  parent_field:\n";
-    std::cout << m.field.parent_field->DebugString();
+      std::cout << "  lhs parent_field:\n";
+      std::cout << m.lhs->parent_field->DebugString();
 
-    if (m.field.index >= 0) {
-      std::cout << "  index: [" << m.field.index << "]\n";
+      if (m.lhs->index >= 0) {
+        std::cout << "  lhs index: [" << m.lhs->index << "]\n";
+      }
+      if (!m.is_change() && m.rhs->index >= 0) {
+        std::cout << "  rhs index: [" << m.rhs->index << "]\n";
+      }
     }
+    if (m.is_addition() && m.rhs != differ.rhs_end()) {
+      std::cout << "  rhs parent: ("
+                << m.rhs->parent->GetDescriptor()->full_name() << ")\n";
+      std::cout << m.rhs->parent->DebugString();
+
+      std::cout << "  rhs parent_field:\n";
+      std::cout << m.rhs->parent_field->DebugString();
+
+      if (m.rhs->index >= 0) {
+        std::cout << "  rhs index: [" << m.rhs->index << "]\n";
+      }
+    }
+    std::cout << "================================\n";
   }
   return 0;
 }

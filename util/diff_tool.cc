@@ -18,12 +18,13 @@ int main(int argc, char** argv) {
   const auto difference = util::DiffSeqs(lhs, rhs);
   for (const auto& mod : difference) {
     if (mod.is_addition()) {
-      std::cout << "[" << mod.addition().insert_pos - lhs.begin() << "]\t + "
-                << *mod.addition().data << "\n";
+      std::cout << "[" << mod.lhs - lhs.begin() << "]\t + " << *mod.rhs << "\n";
     }
     if (mod.is_deletion()) {
-      std::cout << "[" << mod.deletion().data - lhs.begin() << "]\t - "
-                << *mod.deletion().data << "\n";
+      std::cout << "[" << mod.lhs - lhs.begin() << "]\t - " << *mod.lhs << "\n";
+    }
+    if (!mod.is_change() && mod.lhs != lhs.end()) {
+      std::cout << "[" << mod.lhs - lhs.begin() << "]\t = " << *mod.lhs << "\n";
     }
   }
   return 0;

@@ -121,36 +121,26 @@ bool IsSameRepeatedValue(const google::protobuf::Message& lhs, int lhs_i,
 
 }  // namespace
 
-bool ProtoDiffer::FieldEq::operator()(const Field& lhs,
-                                      const Field& rhs) const {
-  if (!IsSameType(*lhs.parent, *rhs.parent)) {
+bool ProtoDiffer::Field::operator==(const Field& other) const {
+  if (!IsSameType(*parent, *other.parent)) {
     return false;
   }
-  if (lhs.parent_field != rhs.parent_field) {
+  if (parent_field != other.parent_field) {
     return false;
   }
-  if (lhs.parent_field->is_repeated()) {
-    return IsSameRepeatedValue(*lhs.parent, lhs.index, *rhs.parent, rhs.index,
-                               lhs.parent_field);
+  if (parent_field->is_repeated()) {
+    return IsSameRepeatedValue(*parent, index, *other.parent, other.index,
+                               parent_field);
   } else {
-    return IsSameScalarValue(*lhs.parent, *rhs.parent, lhs.parent_field);
+    return IsSameScalarValue(*parent, *other.parent, parent_field);
   }
 }
 
 std::vector<ProtoDiffer::Modification> ProtoDiffer::Diff(
     google::protobuf::Message* lhs, google::protobuf::Message* rhs) {
-  auto field_mods = seq_differ_.Diff(WalkFields(lhs), WalkFields(rhs));
-  std::vector<Modification> result;
-  for (const auto& m : field_mods) {
-    if (m.is_addition()) {
-      result.push_back(
-          Modification{Modification::kAddition, *m.addition().data});
-    } else {
-      result.push_back(
-          Modification{Modification::kDeletion, *m.deletion().data});
-    }
-  }
-  return result;
+  lhs_fields_ = WalkFields(lhs);
+  rhs_fields_ = WalkFields(rhs);
+  return seq_differ_.Diff(lhs_fields_, rhs_fields_);
 }
 
 }  // namespace util

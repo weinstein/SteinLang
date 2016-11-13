@@ -13,33 +13,36 @@ namespace util {
 class ProtoDiffer {
  public:
   struct Field {
+    bool operator==(const Field& other) const;
+
     google::protobuf::Message* parent;
     const google::protobuf::FieldDescriptor* parent_field;
     int index;
   };
 
-  struct Modification {
-    enum Kind {
-      kAddition,
-      kDeletion,
-    };
-
-    bool is_addition() const { return kind == kAddition; }
-    bool is_deletion() const { return kind == kDeletion; }
-
-    Kind kind;
-    Field field;
-  };
+  typedef SequenceDiffer<std::vector<Field>> FieldSeqDiffer;
+  typedef FieldSeqDiffer::Modification Modification;
 
   std::vector<Modification> Diff(google::protobuf::Message* lhs,
                                  google::protobuf::Message* rhs);
 
- private:
-  struct FieldEq {
-    bool operator()(const Field& lhs, const Field& rhs) const;
-  };
+  std::vector<Field>::const_iterator lhs_begin() const {
+    return lhs_fields_.cbegin();
+  }
+  std::vector<Field>::const_iterator lhs_end() const {
+    return lhs_fields_.cend();
+  }
+  std::vector<Field>::const_iterator rhs_begin() const {
+    return rhs_fields_.cbegin();
+  }
+  std::vector<Field>::const_iterator rhs_end() const {
+    return rhs_fields_.cend();
+  }
 
-  SequenceDiffer<std::vector<Field>, FieldEq> seq_differ_;
+ private:
+  std::vector<Field> lhs_fields_;
+  std::vector<Field> rhs_fields_;
+  FieldSeqDiffer seq_differ_;
 };
 
 }  // namespace util
