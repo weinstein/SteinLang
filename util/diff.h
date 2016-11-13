@@ -1,3 +1,6 @@
+#ifndef UTIL_DIFF_H_
+#define UTIL_DIFF_H_
+
 #include <functional>
 #include <tuple>
 #include <unordered_map>
@@ -198,3 +201,5 @@ SequenceDiffer<ContainerTy, Eq>::Diff(const Iterator& lhs_begin,
 }
 
 }  // namespace util
+
+#endif  // UTIL_DIFF_H_
