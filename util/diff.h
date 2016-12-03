@@ -25,6 +25,10 @@ class SequenceDiffer {
       kNoChange,
     };
 
+    Modification() : kind(kNoChange) {}
+    Modification(Iterator lhs, Iterator rhs, Kind kind)
+        : lhs(lhs), rhs(rhs), kind(kind) {}
+
     bool is_addition() const { return kind == kAddition; }
     bool is_deletion() const { return kind == kDeletion; }
     bool is_change() const { return kind != kNoChange; }
