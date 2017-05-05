@@ -5,18 +5,17 @@
 Run the `interpreter_main` binary to parse and evaluate programs from stdin, and print some timing information.
 Ex:
 ```
-$ mkdir build && cd build
-$ cmake ..
-$ make
-$ cd lang/interpreter
-$ echo "print \"hello, world!\";" | ./interpreter_main.exe
+$ bazel build lang/steinlang:interpreter_main
+$ bazel-bin/lang/steinlang/interpreter_main
+print "hello, world!";
+<<< EOF
 ```
 
 ### Example programs
 
-There are some sample programs under `lang/interpreter/pgms`. They may be run through the interpreter:
+There are some sample programs under `lang/steinlang/pgms`. They may be run through the interpreter:
 ```
-$ cat lang/interpreter/pgms/fibo_test.stein.txt | interpreter_main.exe
+$ cat lang/steinlang/pgms/fibo_test.stein.txt | bazel-bin/lang/steinlang/interpreter_main
 ```
 
 ### Flags
@@ -29,7 +28,7 @@ There are a number of flags available to print debug information:
 
 *  `--debug_print_syntax_tree`: print the ascii protobuf syntax tree resulting from the parse tree
 
-There are also a number of flags to tweak protobuf arena allocation performance. Run `interpreter_main.exe --help` for a full list of available flags.
+There are also a number of flags to tweak protobuf arena allocation performance. Run `interpreter_main --help` for a full list of available flags.
 
 ## Serialization
 
@@ -51,7 +50,7 @@ $ cat ahh.cfg.txt
 a -> 'a' | 'A' ;
 h -> 'h' | 'H' ;
 exclamation -> a+ h+ ;
-$ echo "AAAAHHH" | ./cfg_parser_main.exe --start_symbol=exclamation --grammar_def=ahh.cfg.txt --ignore_regex="\\s+"
+$ echo "AAAAHHH" | bazel-bin/lang/cfg_parser_main --start_symbol=exclamation --grammar_def=ahh.cfg.txt --ignore_regex="\\s+"
 ```
 
 The full syntax recognized by the context-free grammar parser is in lang/data/grammar\_def.cfg.txt:
@@ -78,7 +77,7 @@ unknown -> ".";
 
 A more convoluted demo:
 ```
-$ ./cfg_parser_main.exe --debug_print_parse_trees \
+$ bazel-bin/lang/cfg_parser_main --debug_print_parse_trees \
     --start_symbol=grammar --ignore_regex="\\s+" \
     --grammar_def=data/grammar_def.cfg.txt <data/grammar_def.cfg.txt
 ```

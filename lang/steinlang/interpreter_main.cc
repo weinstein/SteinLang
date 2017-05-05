@@ -3,9 +3,9 @@
 #include <iostream>
 #include <stdio.h>
 
-#include "lang/interpreter/language_evaluation.h"
-#include "lang/interpreter/source_util.h"
-#include "lang/interpreter/steinlang_parser.h"
+#include "lang/steinlang/language_evaluation.h"
+#include "lang/steinlang/source_util.h"
+#include "lang/steinlang/steinlang_parser.h"
 #include "util/file_io.h"
 #include "util/optional.h"
 
@@ -71,7 +71,6 @@ void DebugPrint(const EvalContext& ctx) {
 
 int evaluate(std::unique_ptr<Evaluator> evaluator) {
   int steps = 0;
-  int num_output_printed = 0;
   while (evaluator->HasComputation()) {
     evaluator->Step();
     for (const std::string& output : evaluator->consume_output()) {

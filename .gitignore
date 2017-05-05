@@ -28,4 +28,8 @@
 *.out
 *.app
 
-build
+bazel-bin
+bazel-genfiles
+bazel-out
+bazel-steinlang
+bazel-testlogs

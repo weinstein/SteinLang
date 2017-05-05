@@ -1,8 +1,8 @@
-#include "lang/interpreter/language_evaluation.h"
+#include "lang/steinlang/language_evaluation.h"
 
 #include <gflags/gflags.h>
 
-#include "lang/interpreter/literal_ops.h"
+#include "lang/steinlang/literal_ops.h"
 
 DEFINE_int64(max_arena_allocation_usage, 64 * 1024 * 1024,
              "Max memory allocated by protobuf arena before freeing memory by "

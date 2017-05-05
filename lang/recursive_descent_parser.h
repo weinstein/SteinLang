@@ -129,6 +129,9 @@ class RecursiveDescentParser {
   };
 
   struct Cardinality {
+    Cardinality() = default;
+    Cardinality(int min, int max) : min(min), max(max) {}
+
     static Cardinality Times(int n) { return {n, n}; }
     static Cardinality AtLeast(int n) {
       return {n, std::numeric_limits<int>::max()};

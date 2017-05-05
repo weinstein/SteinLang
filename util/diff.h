@@ -42,6 +42,9 @@ class SequenceDiffer {
 
  private:
   struct ModSeqResult {
+    ModSeqResult(Modification head, const ModSeqResult* tail, std::size_t len)
+      : head(head), tail(tail), len(len) {}
+
     Modification head;
     const ModSeqResult* tail = nullptr;
     std::size_t len = 0;

@@ -1,6 +1,6 @@
-#include "lang/interpreter/steinlang_parser.h"
+#include "lang/steinlang/steinlang_parser.h"
 
-#include "lang/interpreter/steinlang_syntax.pb.h"
+#include "lang/steinlang/steinlang_syntax.pb.h"
 #include "lang/parse_tree_util.h"
 #include "util/one_of.h"
 #include "util/strings.h"

@@ -1,7 +1,7 @@
-#ifndef LANG_INTERPRETER_STEINLANG_PARSER_H_
-#define LANG_INTERPRETER_STEINLANG_PARSER_H_
+#ifndef LANG_STEINLANG_STEINLANG_PARSER_H_
+#define LANG_STEINLANG_STEINLANG_PARSER_H_
 
-#include "lang/interpreter/steinlang_syntax.pb.h"
+#include "lang/steinlang/steinlang_syntax.pb.h"
 #include "lang/recursive_descent_parser.h"
 #include "lang/tokenizer.h"
 
@@ -89,4 +89,4 @@ Program ToProgram(const Parser::ParseTreeNode& parse_tree);
 
 }  // namespace steinlang
 
-#endif  // LANG_INTERPRETER_STEINLANG_PARSER_H_
+#endif  // LANG_STEINLANG_STEINLANG_PARSER_H_

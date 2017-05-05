@@ -1,4 +1,4 @@
-#include "lang/interpreter/literal_ops.h"
+#include "lang/steinlang/literal_ops.h"
 
 namespace steinlang {
 

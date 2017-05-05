@@ -1,4 +1,4 @@
-#include "lang/interpreter/memory.h"
+#include "lang/steinlang/memory.h"
 
 #include <gflags/gflags.h>
 

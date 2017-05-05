@@ -1,11 +1,11 @@
-#ifndef LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
-#define LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
+#ifndef LANG_STEINLANG_LANGUAGE_EVALUATION_H_
+#define LANG_STEINLANG_LANGUAGE_EVALUATION_H_
 
 #include <string>
 #include <vector>
 
-#include "lang/interpreter/memory.h"
-#include "lang/interpreter/steinlang_syntax.pb.h"
+#include "lang/steinlang/memory.h"
+#include "lang/steinlang/steinlang_syntax.pb.h"
 
 namespace steinlang {
 
@@ -113,4 +113,4 @@ class Evaluator {
 
 }  // namespace steinlang
 
-#endif  // LANG_INTERPRETER_LANGUAGE_EVALUATION_H_
+#endif  // LANG_STEINLANG_LANGUAGE_EVALUATION_H_
