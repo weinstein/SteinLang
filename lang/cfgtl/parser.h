@@ -61,7 +61,7 @@ struct Parser<Grammar, Expression<Term, Optional>> {
   static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
     // If we can parse the term, that's the result.
     auto term_result = Parser<Grammar, Term>::Parse(begin, end, parse_to_end);
-    if (term_result.success()) {
+    if (term_result.is_success()) {
       // Confusing: the result has data present, and the present value is an
       // optional with the parsed term present.
       concrete_type concrete_result = std::move(term_result.value());
@@ -187,7 +187,7 @@ struct Parser<Grammar, ExpressionList<Es...>> {
   using IthParser =
       Parser<Grammar, typename std::tuple_element<I, std::tuple<Es...>>::type>;
 
-  template <typename It, std::size_t I>
+  template <std::size_t I, typename It>
   static ParseResult<typename IthParser<I>::concrete_type, It> ParseImpl(
       It* cur_pos, It end, bool parse_to_end) {
     auto result = IthParser<I>::Parse(*cur_pos, end, parse_to_end);
@@ -201,7 +201,7 @@ struct Parser<Grammar, ExpressionList<Es...>> {
                                                   std::index_sequence<Is...>) {
     It cur_pos = begin;
     auto results = std::make_tuple(
-        ParseImpl(&cur_pos, end, Is == size - 1 && parse_to_end)...);
+        ParseImpl<Is>(&cur_pos, end, Is == size - 1 && parse_to_end)...);
     if (And(std::get<Is>(results).is_success()...)) {
       return ParseResult<concrete_type, It>{
           cur_pos,
@@ -246,13 +246,13 @@ struct Parser<Grammar, AlternativeList<A1, A2>> {
 // grammar.
 // This is defined independently of the variable Parser<> to allow further
 // variable specialization to access the default variable parser.
-template <typename Grammar, typename V>
+template <typename G, typename V>
 struct DefaultVariableParser
-    : Parser<Grammar, typename Lookup<Grammar>::template TypeOf<V>> {};
+    : Parser<G, typename Lookup<G>::template TypeOf<V>> {};
 
-template <typename Grammar, typename T, T Tag>
-struct Parser<Grammar, Variable<T, Tag>>
-    : DefaultVariableParser<Grammar, Variable<T, Tag>> {};
+template <typename G, typename T, T Tag>
+struct Parser<G, Variable<T, Tag>>
+    : DefaultVariableParser<G, Variable<T, Tag>> {};
 
 }  // namespace lang 
 

@@ -29,11 +29,20 @@ cc_library(
 )
 
 cc_library(
+    name = "builder",
+    hdrs = ["builder.h"],
+    deps = [
+      ":cfg_types",
+    ],
+)
+
+cc_library(
     name = "parser_test",
     srcs = ["parser_test.cc"],
     copts = ["--std=c++14"],
     deps = [
         ":parser",
+        ":builder",
         "//lang:tokenizer",
     ],
 )
