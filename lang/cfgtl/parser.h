@@ -10,6 +10,7 @@
 #include "lang/cfgtl/cardinality.h"
 #include "lang/cfgtl/cfg_types.h"
 #include "util/optional.h"
+#include "util/one_of.h"
 
 namespace lang {
 
@@ -17,8 +18,8 @@ template <typename T, typename It>
 struct ParseResult {
   bool is_success() const { return data.is_present(); }
 
-  const T& result() const { return data.value(); }
-  T& result() { return data.mutable_value(); }
+  const T& value() const { return data.value(); }
+  T& value() { return data.mutable_value(); }
 
   It pos;
   util::Optional<T> data;
@@ -32,17 +33,15 @@ struct Parser<Grammar, Token<T, Tag>> {
   using concrete_type = std::string;
 
   template <typename It>
-  using Result = ParseResult<concrete_type, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
-    Result<It> result{begin, {}};
+  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+    ParseResult<concrete_type, It> result{begin, {}};
     if (begin < end && begin->tag == Tag) {
       result.pos = begin + 1;
       if (!parse_to_end || result.pos == end) {
         result.data = begin->value;
       }
     }
+    return result;
   };
 };
 
@@ -59,23 +58,20 @@ struct Parser<Grammar, Expression<Term, Optional>> {
       util::Optional<typename Parser<Grammar, Term>::concrete_type>;
 
   template <typename It>
-  using Result = ParseResult<concrete_type, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
     // If we can parse the term, that's the result.
     auto term_result = Parser<Grammar, Term>::Parse(begin, end, parse_to_end);
     if (term_result.success()) {
       // Confusing: the result has data present, and the present value is an
       // optional with the parsed term present.
-      concrete_type concrete_result = std::move(term_result.result());
-      return Result<It>{term_result.pos, std::move(concrete_result)};
+      concrete_type concrete_result = std::move(term_result.value());
+      return ParseResult<concrete_type, It>{term_result.pos, std::move(concrete_result)};
     }
     // We couldn't parse the term.
     // Confusing: the result has data present, and the present value is an empty
     // optional (parse is successful, and we didn't parse the optional term).
     concrete_type concrete_result = {};
-    return Result<It>{begin, std::move(concrete_result)};
+    return ParseResult<concrete_type, It>{begin, std::move(concrete_result)};
   }
 };
 
@@ -87,11 +83,8 @@ struct Parser<Grammar, Expression<Term, Times<N>>> {
       std::array<typename Parser<Grammar, Term>::concrete_type, N>;
 
   template <typename It>
-  using Result = ParseResult<concrete_type, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
-    Result<It> cur{begin, concrete_type()};
+  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+    ParseResult<concrete_type, It> cur{begin, concrete_type()};
     for (std::size_t i = 0; i < N; ++i) {
       const bool is_end = i + 1 == N;
       auto result =
@@ -101,7 +94,7 @@ struct Parser<Grammar, Expression<Term, Times<N>>> {
         return cur;
       }
       cur.pos = result.pos;
-      cur.result()[i] = std::move(result.result());
+      cur.value()[i] = std::move(result.value());
     }
     if (parse_to_end && cur.pos < end) {
       cur.data.clear();
@@ -118,24 +111,21 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
       std::vector<typename Parser<Grammar, Term>::concrete_type>;
 
   template <typename It>
-  using Result = ParseResult<concrete_type, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
-    Result<It> cur{begin, concrete_type()};
+  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+    ParseResult<concrete_type, It> cur{begin, concrete_type()};
     for (std::size_t i = 0; i < Cardinality::max; ++i) {
       const bool is_end = i + 1 == Cardinality::max;
       const bool is_optional = i >= Cardinality::min;
       if (is_optional) {
         // This can never fail, so result.is_success() is always true and
-        // result.result() is always valid.
+        // result.value() is always valid.
         auto result = Parser<Grammar, Expression<Term, Optional>>::Parse(
             cur.pos, end, is_end && parse_to_end);
-        auto term_or = result.result();
+        auto term_or = result.value();
         // If we successfully parsed a term, add it to the results and update
         // the current iterator position.
         if (term_or.is_present()) {
-          cur.result().push_back(std::move(term_or.mutable_value()));
+          cur.value().push_back(std::move(term_or.mutable_value()));
           cur.pos = result.pos;
         } else {
           // If we didn't parse a term, we won't be updating the iterator
@@ -150,7 +140,7 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
           return cur;
         }
         cur.pos = result.pos;
-        cur.result().push_back(std::move(result.result()));
+        cur.value().push_back(std::move(result.value()));
       }
     }
     if (parse_to_end && cur.pos < end) {
@@ -187,10 +177,7 @@ struct Parser<Grammar, ExpressionList<Es...>> {
   static constexpr std::size_t size = sizeof...(Es);
 
   template <typename It>
-  using Result = ParseResult<concrete_type, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
     return ParseImpl(begin, end, parse_to_end,
                      std::make_index_sequence<size>());
   }
@@ -201,7 +188,7 @@ struct Parser<Grammar, ExpressionList<Es...>> {
       Parser<Grammar, typename std::tuple_element<I, std::tuple<Es...>>::type>;
 
   template <typename It, std::size_t I>
-  static typename IthParser<I>::template Result<It> ParseImpl(
+  static ParseResult<typename IthParser<I>::concrete_type, It> ParseImpl(
       It* cur_pos, It end, bool parse_to_end) {
     auto result = IthParser<I>::Parse(*cur_pos, end, parse_to_end);
     *cur_pos = result.pos;
@@ -209,18 +196,18 @@ struct Parser<Grammar, ExpressionList<Es...>> {
   }
 
   template <typename It, std::size_t... Is>
-  static Result<It> ParseImpl(It begin, It end, bool parse_to_end,
-                              std::index_sequence<Is...>) {
+  static ParseResult<concrete_type, It> ParseImpl(It begin, It end,
+                                                  bool parse_to_end,
+                                                  std::index_sequence<Is...>) {
     It cur_pos = begin;
-    std::tuple<typename Parser<Grammar, Es>::template Result<It>...> results =
-        std::make_tuple(
-            ParseImpl(&cur_pos, end, Is == size - 1 && parse_to_end)...);
+    auto results = std::make_tuple(
+        ParseImpl(&cur_pos, end, Is == size - 1 && parse_to_end)...);
     if (And(std::get<Is>(results).is_success()...)) {
-      return Result<It>{
+      return ParseResult<concrete_type, It>{
           cur_pos,
-          std::make_tuple(std::move(std::get<Is>(results).result())...)};
+          std::make_tuple(std::move(std::get<Is>(results).value())...)};
     }
-    return Result<It>{cur_pos, {}};
+    return ParseResult<concrete_type, It>{cur_pos, {}};
   }
 };
 
@@ -228,6 +215,32 @@ struct Parser<Grammar, ExpressionList<Es...>> {
 // This parses the alternative directly.
 template <typename Grammar, typename A>
 struct Parser<Grammar, AlternativeList<A>> : Parser<Grammar, A> {};
+
+// Specialization of Parser for alternative lists of length 2.
+// This parses a OneOf of the alternatives.
+// TODO: generalize to all lists with variant.
+template <typename Grammar, typename A1, typename A2>
+struct Parser<Grammar, AlternativeList<A1, A2>> {
+  using concrete_type =
+      util::OneOf<typename Parser<Grammar, A1>::concrete_type,
+                  typename Parser<Grammar, A2>::concrete_type>;
+
+  template <typename It>
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
+    auto result1 = Parser<Grammar, A1>::Parse(begin, end, parse_to_end);
+    if (result1.is_success()) {
+      return ParseResult<concrete_type, It>{result1.pos,
+                                            std::move(result1.value())};
+    }
+    auto result2 = Parser<Grammar, A2>::Parse(begin, end, parse_to_end);
+    if (result2.is_success()) {
+      return ParseResult<concrete_type, It>{result2.pos,
+                                            std::move(result2.value())};
+    }
+    return ParseResult<concrete_type, It>{begin, {}};
+  }
+};
 
 // Default variable parser. This is just a parser for the variable's rule in the
 // grammar.

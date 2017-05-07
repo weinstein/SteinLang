@@ -1,38 +1,54 @@
 #include "lang/cfgtl/parser.h"
 
+#include "lang/tokenizer.h"
+
 namespace lang {
 
 enum class TokTag {
   INT,
+  LPAREN,
+  RPAREN,
+  PIPE,
 };
 
 enum class VarTag {
   INT,
-  FOO,
-  BAR,
+  TERM,
+  GROUP_TERM,
+  ALTERNATIVES,
+  EXPRS,
+  EXPR,
 };
 
 using IntTok = Token<TokTag, TokTag::INT>;
+using LParen = Token<TokTag, TokTag::LPAREN>;
+using RParen = Token<TokTag, TokTag::RPAREN>;
+using Pipe = Token<TokTag, TokTag::PIPE>; 
+
 using IntVar = Variable<VarTag, VarTag::INT>;
-using Foo = Variable<VarTag, VarTag::FOO>;
-using Bar = Variable<VarTag, VarTag::BAR>;
+using Term = Variable<VarTag, VarTag::TERM>;
+using GroupTerm = Variable<VarTag, VarTag::GROUP_TERM>;
+using Alternatives = Variable<VarTag, VarTag::ALTERNATIVES>;
+using Exprs = Variable<VarTag, VarTag::EXPRS>;
+using Expr = Variable<VarTag, VarTag::EXPR>;
+
 using MyLanguage = Grammar<
-    Rule<IntVar, AlternativeList<ExpressionList<Expression<IntTok, Times<1>>>>>,
-    Rule<Foo, AlternativeList<ExpressionList<Expression<IntVar, Optional>>>>,
-    Rule<Bar, AlternativeList<ExpressionList<Expression<Foo, Times<1>>>>>>;
+    Rule<IntVar, IntTok>, Rule<Term, AlternativeList<IntVar, GroupTerm>>,
+    Rule<GroupTerm, ExpressionList<LParen, Alternatives, RParen>>,
+    Rule<Alternatives,
+         ExpressionList<Exprs, Expression<ExpressionList<Pipe, Exprs>, Any>>>,
+    Rule<Exprs, Expression<Expr, AtLeast<1>>>,
+    Rule<Expr, Term>>;
 
 template <>
 struct Parser<MyLanguage, IntVar> {
   using concrete_type = int;
 
   template <typename It>
-  using Result = ParseResult<int, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<int, It> Parse(It begin, It end, bool parse_to_end) {
     auto result = DefaultVariableParser<MyLanguage, IntVar>::Parse(
         begin, end, parse_to_end);
-    Result<It> ret{result.pos, {}};
+    ParseResult<int, It> ret{result.pos, {}};
     if (result.is_success()) {
       ret.data = std::stoi(result.result());
     }
@@ -40,25 +56,15 @@ struct Parser<MyLanguage, IntVar> {
   }
 };
 
-template <>
-struct Parser<MyLanguage, Bar> {
-  using concrete_type = std::string;
+using CfgToken = Tokenizer<TokTag>::Token;
+using CfgTokenIt = typename std::vector<CfgToken>::iterator;
 
-  template <typename It>
-  using Result = ParseResult<std::string, It>;
-
-  template <typename It>
-  static Result<It> Parse(It begin, It end, bool parse_to_end) {
-    auto result =
-        DefaultVariableParser<MyLanguage, Bar>::Parse(begin, end, parse_to_end);
-    Result<It> ret{result.pos, {}};
-    if (result.is_success()) {
-      ret.data = result.result().is_present()
-                     ? std::to_string(result.result().value())
-                     : "<none>";
-    }
-    return ret;
+int Foo(CfgTokenIt begin, CfgTokenIt end) {
+  auto result = Parser<MyLanguage, Expr>::Parse(begin, end, true);
+  if (result.is_success()) {
+    return result.result();
   }
-};
+  return -1;
+}
 
 }  // namespace lang

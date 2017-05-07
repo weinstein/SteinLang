@@ -24,6 +24,7 @@ cc_library(
         ":cardinality",
         ":cfg_types",
         "//util:optional",
+        "//util:one_of",
     ],
 )
 
@@ -33,5 +34,6 @@ cc_library(
     copts = ["--std=c++14"],
     deps = [
         ":parser",
+        "//lang:tokenizer",
     ],
 )
