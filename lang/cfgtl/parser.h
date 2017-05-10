@@ -2,6 +2,7 @@
 #define LANG_CFGTL_PARSER_H_
 
 #include <array>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -10,7 +11,7 @@
 #include "lang/cfgtl/cardinality.h"
 #include "lang/cfgtl/cfg_types.h"
 #include "util/optional.h"
-#include "util/one_of.h"
+#include "util/variant.h"
 
 namespace lang {
 
@@ -121,7 +122,7 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
         // result.value() is always valid.
         auto result = Parser<Grammar, Expression<Term, Optional>>::Parse(
             cur.pos, end, is_end && parse_to_end);
-        auto term_or = result.value();
+        auto term_or = std::move(result.value());
         // If we successfully parsed a term, add it to the results and update
         // the current iterator position.
         if (term_or.is_present()) {
@@ -174,8 +175,6 @@ struct Parser<Grammar, ExpressionList<Es...>> {
   using concrete_type =
       std::tuple<typename Parser<Grammar, Es>::concrete_type...>;
 
-  static constexpr std::size_t size = sizeof...(Es);
-
   template <typename It>
   static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
     return ParseImpl(begin, end, parse_to_end,
@@ -183,6 +182,8 @@ struct Parser<Grammar, ExpressionList<Es...>> {
   }
 
  private:
+  static constexpr std::size_t size = sizeof...(Es);
+
   template <std::size_t I>
   using IthParser =
       Parser<Grammar, typename std::tuple_element<I, std::tuple<Es...>>::type>;
@@ -216,29 +217,45 @@ struct Parser<Grammar, ExpressionList<Es...>> {
 template <typename Grammar, typename A>
 struct Parser<Grammar, AlternativeList<A>> : Parser<Grammar, A> {};
 
-// Specialization of Parser for alternative lists of length 2.
-// This parses a OneOf of the alternatives.
-// TODO: generalize to all lists with variant.
-template <typename Grammar, typename A1, typename A2>
-struct Parser<Grammar, AlternativeList<A1, A2>> {
+// Messy recursive implementation of parsing alternatives into variants.
+template <std::size_t I, typename ConcreteType, typename It, typename Grammar,
+          typename T1, typename... Ts>
+static void ParseImpl(ParseResult<ConcreteType, It>* cur, It end,
+                      bool parse_to_end, Parser<Grammar, T1> p1,
+                      Parser<Grammar, Ts>... ps) {
+  auto result = p1.Parse(cur->pos, end, parse_to_end);
+  if (result.is_success()) {
+    cur->pos = result.pos;
+    cur->value() =
+        ConcreteType(util::in_place_index_t<I>(), std::move(result.value()));
+  }
+  return ParseImpl<I + 1, ConcreteType>(cur, end, parse_to_end, ps...);
+}
+
+// Messy recursive implementation of parsing alternatives into variants, base
+// case: no more alternatives to try, so it's a parse failure.
+template <std::size_t I, typename ConcreteType, typename Grammar, typename It>
+static void ParseImpl(ParseResult<ConcreteType, It>* cur, It end,
+                      bool parse_to_end) {
+  cur->data.clear();
+}
+
+// Specialization of Parser for alternative lists of any length >= 2.
+// This parses a variant of the alternatives.
+template <typename Grammar, typename A1, typename A2, typename... As>
+struct Parser<Grammar, AlternativeList<A1, A2, As...>> {
   using concrete_type =
-      util::OneOf<typename Parser<Grammar, A1>::concrete_type,
-                  typename Parser<Grammar, A2>::concrete_type>;
+      util::variant<typename Parser<Grammar, A1>::concrete_type,
+                    typename Parser<Grammar, A2>::concrete_type,
+                    typename Parser<Grammar, As>::concrete_type...>;
 
   template <typename It>
   static ParseResult<concrete_type, It> Parse(It begin, It end,
                                               bool parse_to_end) {
-    auto result1 = Parser<Grammar, A1>::Parse(begin, end, parse_to_end);
-    if (result1.is_success()) {
-      return ParseResult<concrete_type, It>{result1.pos,
-                                            std::move(result1.value())};
-    }
-    auto result2 = Parser<Grammar, A2>::Parse(begin, end, parse_to_end);
-    if (result2.is_success()) {
-      return ParseResult<concrete_type, It>{result2.pos,
-                                            std::move(result2.value())};
-    }
-    return ParseResult<concrete_type, It>{begin, {}};
+    ParseResult<concrete_type, It> ret{begin, {}};
+    ParseImpl<0, concrete_type>(&ret, end, parse_to_end, Parser<Grammar, A1>(),
+                             Parser<Grammar, A2>(), Parser<Grammar, As>()...);
+    return ret;
   }
 };
 
@@ -246,9 +263,45 @@ struct Parser<Grammar, AlternativeList<A1, A2>> {
 // grammar.
 // This is defined independently of the variable Parser<> to allow further
 // variable specialization to access the default variable parser.
-template <typename G, typename V>
-struct DefaultVariableParser
-    : Parser<G, typename Lookup<G>::template TypeOf<V>> {};
+template <typename Grammar, typename V>
+struct DefaultVariableParser {
+  // Breaks recursive rules.
+  // Example: consider the rule which is a string of "foo"s:
+  //   x |= "foo" x || "foo";
+  // The type of the RHS is variant<tuple<string, concrete_type>, string>
+  // If concrete_type = variant<tuple<string, concrete_type>, string> directly,
+  // then the type is recursive and unexpressable in this direct manner.
+  // However, if we let concrete_type = TypeX, where TypeX contains the RHS type:
+  // struct TypeX : variant<tuple<string, TypeX>, string> {};
+  // This is valid, because the type id of concrete_type is simply TypeX and the
+  // type id doesn't depend on itself.
+  using base_parser =
+      Parser<Grammar, typename Lookup<Grammar>::template TypeOf<V>>;
+  struct ConcreteType {
+    using type = typename base_parser::concrete_type;
+
+    const type& operator*() const { return *value; }
+    type& operator*() { return *value; }
+    const type* operator->() const { return value.operator->(); }
+    type* operator->() { return value.operator->(); }
+
+    std::unique_ptr<type> value;
+  };
+  using concrete_type = ConcreteType;
+
+  template <typename It>
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
+    auto result = base_parser::Parse(begin, end, parse_to_end);
+    if (result.is_success()) {
+      return ParseResult<concrete_type, It>{
+          result.pos,
+          ConcreteType{std::make_unique<typename ConcreteType::type>(
+              std::move(result.value()))}};
+    }
+    return ParseResult<concrete_type, It>{result.pos, {}};
+  }
+};
 
 template <typename G, typename T, T Tag>
 struct Parser<G, Variable<T, Tag>>

@@ -25,6 +25,16 @@ cc_library(
 )
 
 cc_library(
+    name = "variant",
+    hdrs = [
+        "variant.h",
+    ],
+    deps = [
+        "//third_party/variant",
+    ],
+)
+
+cc_library(
     name = "string_util",
     hdrs = ["strings.h"],
 )

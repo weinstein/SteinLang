@@ -44,5 +44,6 @@ cc_library(
         ":parser",
         ":builder",
         "//lang:tokenizer",
+        "//util:variant",
     ],
 )
