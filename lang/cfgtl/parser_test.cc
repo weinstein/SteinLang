@@ -153,21 +153,14 @@ using SteinLang = decltype(
     kPgm |= kStmt * AtLeast<1>());
 
 template <>
-struct Parser<SteinLang, Var<VariableTag::VARLIST>> {
-  using concrete_type = std::vector<std::string>;
-
-  template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end,
-                                              bool parse_to_end) {
-    auto result =
-        DefaultVariableParser<SteinLang, Var<VariableTag::VARLIST>>::Parse(
-            begin, end, parse_to_end);
-    ParseResult<concrete_type, It> ret{result.pos, {}};
-    if (result.is_success()) {
-      ret.value().push_back(std::move(std::get<0>(*result.value())));
-      for (auto& comma_id : std::get<1>(*result.value())) {
-        ret.value().push_back(std::move(std::get<1>(comma_id)));
-      }
+struct Converter<SteinLang, Var<VariableTag::VARLIST>> {
+  using in_type = ConcreteType<SteinLang, Var<VariableTag::VARLIST>>;
+  using out_type = std::vector<std::string>;
+  static std::vector<std::string> Convert(in_type in) {
+    std::vector<std::string> ret;
+    ret.push_back(std::move(std::get<0>(*in)));
+    for (auto& comma_id : std::get<1>(*in)) {
+      ret.push_back(std::move(std::get<1>(comma_id)));
     }
     return ret;
   }
@@ -185,12 +178,11 @@ void TestParseVarList(SlTokenIt begin, SlTokenIt end) {
   std::vector<std::string> vars = result.value();
 }
 
-void TestParseExpr(SlTokenIt begin, SlTokenIt end) {
-  auto result = Parser<SteinLang, Var<VariableTag::EXPR>>::Parse(begin, end, true);
-}
-
-void TestParsePgm(SlTokenIt begin, SlTokenIt end) {
-  auto result = Parser<SteinLang, Var<VariableTag::PGM>>::Parse(begin, end, true);
+void TestParseStuff(SlTokenIt begin, SlTokenIt end) {
+  Parser<SteinLang, Var<VariableTag::MONOP>>::Parse(begin, end, true);
+  Parser<SteinLang, Var<VariableTag::BINOP>>::Parse(begin, end, true);
+  Parser<SteinLang, Var<VariableTag::EXPR>>::Parse(begin, end, true);
+  Parser<SteinLang, Var<VariableTag::PGM>>::Parse(begin, end, true);
 }
 
 }  // namespace lang

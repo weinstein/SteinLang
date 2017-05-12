@@ -234,7 +234,7 @@ static void ParseImpl(ParseResult<ConcreteType, It>* cur, It end,
 
 // Messy recursive implementation of parsing alternatives into variants, base
 // case: no more alternatives to try, so it's a parse failure.
-template <std::size_t I, typename ConcreteType, typename Grammar, typename It>
+template <std::size_t I, typename ConcreteType, typename It>
 static void ParseImpl(ParseResult<ConcreteType, It>* cur, It end,
                       bool parse_to_end) {
   cur->data.clear();
@@ -259,12 +259,8 @@ struct Parser<Grammar, AlternativeList<A1, A2, As...>> {
   }
 };
 
-// Default variable parser. This is just a parser for the variable's rule in the
-// grammar.
-// This is defined independently of the variable Parser<> to allow further
-// variable specialization to access the default variable parser.
 template <typename Grammar, typename V>
-struct DefaultVariableParser {
+struct ConcreteType {
   // Breaks recursive rules.
   // Example: consider the rule which is a string of "foo"s:
   //   x |= "foo" x || "foo";
@@ -277,35 +273,57 @@ struct DefaultVariableParser {
   // type id doesn't depend on itself.
   using base_parser =
       Parser<Grammar, typename Lookup<Grammar>::template TypeOf<V>>;
-  struct ConcreteType {
-    using type = typename base_parser::concrete_type;
+  using value_type = typename base_parser::concrete_type;
 
-    const type& operator*() const { return *value; }
-    type& operator*() { return *value; }
-    const type* operator->() const { return value.operator->(); }
-    type* operator->() { return value.operator->(); }
+  const value_type& operator*() const { return *value; }
+  value_type& operator*() { return *value; }
+  const value_type* operator->() const { return value.operator->(); }
+  value_type* operator->() { return value.operator->(); }
 
-    std::unique_ptr<type> value;
-  };
-  using concrete_type = ConcreteType;
+  std::unique_ptr<value_type> value;
+};
+
+template <typename Grammar, typename V>
+ConcreteType<Grammar, V> MakeConcreteType(
+    typename ConcreteType<Grammar, V>::value_type in) {
+  using value_type = typename ConcreteType<Grammar, V>::value_type;
+  return ConcreteType<Grammar, V>{std::make_unique<value_type>(std::move(in))};
+}
+
+template <typename Grammar, typename V>
+struct Converter {
+  using in_type = ConcreteType<Grammar, V>;
+  using out_type = ConcreteType<Grammar, V>;
+
+  static out_type Convert(in_type in) { return std::move(in); }
+};
+
+// Default variable parser. This is just a parser for the variable's rule in the
+// grammar.
+// This is defined independently of the variable Parser<> to allow further
+// variable specialization to access the default variable parser.
+template <typename Grammar, typename T, T Tag>
+struct Parser<Grammar, Variable<T, Tag>> {
+  using V = Variable<T, Tag>;
+  using base_parser =
+      Parser<Grammar, typename Lookup<Grammar>::template TypeOf<V>>;
+  using concrete_type = typename Converter<Grammar, V>::out_type;
 
   template <typename It>
   static ParseResult<concrete_type, It> Parse(It begin, It end,
                                               bool parse_to_end) {
     auto result = base_parser::Parse(begin, end, parse_to_end);
     if (result.is_success()) {
-      return ParseResult<concrete_type, It>{
-          result.pos,
-          ConcreteType{std::make_unique<typename ConcreteType::type>(
-              std::move(result.value()))}};
+      ConcreteType<Grammar, V> base_value =
+          MakeConcreteType<Grammar, V>(std::move(result.value()));
+      concrete_type converted_value =
+          Converter<Grammar, V>::Convert(std::move(base_value));
+      return ParseResult<concrete_type, It>{result.pos,
+                                            std::move(converted_value)};
     }
     return ParseResult<concrete_type, It>{result.pos, {}};
   }
 };
-
-template <typename G, typename T, T Tag>
-struct Parser<G, Variable<T, Tag>>
-    : DefaultVariableParser<G, Variable<T, Tag>> {};
 
 }  // namespace lang 
 
