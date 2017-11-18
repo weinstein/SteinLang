@@ -80,7 +80,7 @@ cc_binary(
         ":source_util",
         ":steinlang_parser",
         "//util:file_util",
-        "//util:optional",
         "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/types:optional",
     ],
 )

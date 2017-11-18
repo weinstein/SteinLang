@@ -19,7 +19,7 @@ cc_library(
     deps = [
         ":parse_tree_util",
         ":tokenizer",
-        "//util",
+        "//util:one_of",
     ],
 )
 
@@ -31,7 +31,7 @@ cc_library(
     deps = [
         ":recursive_descent_parser",
         ":tokenizer",
-        "//util",
+        "//util:one_of",
         "//util:string_util",
     ],
 )

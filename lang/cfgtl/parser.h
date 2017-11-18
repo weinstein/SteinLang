@@ -8,22 +8,22 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "lang/cfgtl/cardinality.h"
 #include "lang/cfgtl/cfg_types.h"
-#include "util/optional.h"
 #include "util/variant.h"
 
 namespace lang {
 
 template <typename T, typename It>
 struct ParseResult {
-  bool is_success() const { return data.is_present(); }
+  bool is_success() const { return data.has_value(); }
 
   const T& value() const { return data.value(); }
-  T& value() { return data.mutable_value(); }
+  T& value() { return data.value(); }
 
   It pos;
-  util::Optional<T> data;
+  absl::optional<T> data;
 };
 
 template <typename Grammar, typename T>
@@ -34,7 +34,8 @@ struct Parser<Grammar, Token<T, Tag>> {
   using concrete_type = std::string;
 
   template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
     ParseResult<concrete_type, It> result{begin, {}};
     if (begin < end && begin->tag == Tag) {
       result.pos = begin + 1;
@@ -52,21 +53,23 @@ template <typename Grammar, typename Term>
 struct Parser<Grammar, Expression<Term, Times<1>>> : Parser<Grammar, Term> {};
 
 // Specialization of Parser for an Expression of an optional Term.
-// This will parse a util::Optional.
+// This will parse an absl::optional.
 template <typename Grammar, typename Term>
 struct Parser<Grammar, Expression<Term, Optional>> {
   using concrete_type =
-      util::Optional<typename Parser<Grammar, Term>::concrete_type>;
+      absl::optional<typename Parser<Grammar, Term>::concrete_type>;
 
   template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
     // If we can parse the term, that's the result.
     auto term_result = Parser<Grammar, Term>::Parse(begin, end, parse_to_end);
     if (term_result.is_success()) {
       // Confusing: the result has data present, and the present value is an
       // optional with the parsed term present.
       concrete_type concrete_result = std::move(term_result.value());
-      return ParseResult<concrete_type, It>{term_result.pos, std::move(concrete_result)};
+      return ParseResult<concrete_type, It>{term_result.pos,
+                                            std::move(concrete_result)};
     }
     // We couldn't parse the term.
     // Confusing: the result has data present, and the present value is an empty
@@ -84,7 +87,8 @@ struct Parser<Grammar, Expression<Term, Times<N>>> {
       std::array<typename Parser<Grammar, Term>::concrete_type, N>;
 
   template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
     ParseResult<concrete_type, It> cur{begin, concrete_type()};
     for (std::size_t i = 0; i < N; ++i) {
       const bool is_end = i + 1 == N;
@@ -112,7 +116,8 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
       std::vector<typename Parser<Grammar, Term>::concrete_type>;
 
   template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
     ParseResult<concrete_type, It> cur{begin, concrete_type()};
     for (std::size_t i = 0; i < Cardinality::max; ++i) {
       const bool is_end = i + 1 == Cardinality::max;
@@ -135,7 +140,8 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
           break;
         }
       } else {
-        auto result = Parser<Grammar, Term>::Parse(cur.pos, end, is_end && parse_to_end);
+        auto result =
+            Parser<Grammar, Term>::Parse(cur.pos, end, is_end && parse_to_end);
         if (!result.is_success()) {
           cur.data.clear();
           return cur;
@@ -169,14 +175,15 @@ bool And(const T1& t1, const Ts&... ts) {
   return t1 && And(ts...);
 }
 
-// General case for parsing a list of multiple 
+// General case for parsing a list of multiple
 template <typename Grammar, typename... Es>
 struct Parser<Grammar, ExpressionList<Es...>> {
   using concrete_type =
       std::tuple<typename Parser<Grammar, Es>::concrete_type...>;
 
   template <typename It>
-  static ParseResult<concrete_type, It> Parse(It begin, It end, bool parse_to_end) {
+  static ParseResult<concrete_type, It> Parse(It begin, It end,
+                                              bool parse_to_end) {
     return ParseImpl(begin, end, parse_to_end,
                      std::make_index_sequence<size>());
   }
@@ -254,7 +261,8 @@ struct Parser<Grammar, AlternativeList<A1, A2, As...>> {
                                               bool parse_to_end) {
     ParseResult<concrete_type, It> ret{begin, {}};
     ParseImpl<0, concrete_type>(&ret, end, parse_to_end, Parser<Grammar, A1>(),
-                             Parser<Grammar, A2>(), Parser<Grammar, As>()...);
+                                Parser<Grammar, A2>(),
+                                Parser<Grammar, As>()...);
     return ret;
   }
 };
@@ -267,7 +275,8 @@ struct ConcreteType {
   // The type of the RHS is variant<tuple<string, concrete_type>, string>
   // If concrete_type = variant<tuple<string, concrete_type>, string> directly,
   // then the type is recursive and unexpressable in this direct manner.
-  // However, if we let concrete_type = TypeX, where TypeX contains the RHS type:
+  // However, if we let concrete_type = TypeX, where TypeX contains the RHS
+  // type:
   // struct TypeX : variant<tuple<string, TypeX>, string> {};
   // This is valid, because the type id of concrete_type is simply TypeX and the
   // type id doesn't depend on itself.
@@ -325,6 +334,6 @@ struct Parser<Grammar, Variable<T, Tag>> {
   }
 };
 
-}  // namespace lang 
+}  // namespace lang
 
 #endif  // LANG_CFGTL_PARSER_H_

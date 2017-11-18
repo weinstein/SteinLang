@@ -1,13 +1,13 @@
-#include <chrono>
 #include <gflags/gflags.h>
-#include <iostream>
 #include <stdio.h>
+#include <chrono>
+#include <iostream>
 
+#include "absl/types/optional.h"
 #include "lang/steinlang/language_evaluation.h"
 #include "lang/steinlang/source_util.h"
 #include "lang/steinlang/steinlang_parser.h"
 #include "util/file_io.h"
-#include "util/optional.h"
 
 DEFINE_bool(debug_print_parse_trees, false, "");
 DEFINE_bool(debug_print_syntax_tree, false, "");
@@ -19,7 +19,7 @@ DEFINE_bool(debug_print_timing, false, "");
 namespace {
 
 template <typename Lexer, typename Parser>
-util::Optional<typename Parser::ParseTreeNode> LexAndParse(
+absl::optional<typename Parser::ParseTreeNode> LexAndParse(
     const std::string& text, const Lexer& lexer, const Parser& parser) {
   const std::vector<typename Lexer::Token> tokens = lexer(text);
   auto parse_result = parser.Parse(tokens.begin(), tokens.end());
@@ -40,7 +40,7 @@ util::Optional<typename Parser::ParseTreeNode> LexAndParse(
 
   if (!parse_result.success) {
     std::cout << "parse failed.\n";
-    return util::EmptyOptional();
+    return absl::nullopt;
   }
   return std::move(parse_result.node);
 }
@@ -92,10 +92,11 @@ void InitCtx(const Program& pgm, EvalContext* ctx) {
   }
 }
 
-bool Evaluate(const std::string& input, EvalContext* ctx, PoolingArenaAllocator* allocator) {
-  const util::Optional<steinlang::Parser::ParseTreeNode> parse_result =
+bool Evaluate(const std::string& input, EvalContext* ctx,
+              PoolingArenaAllocator* allocator) {
+  const absl::optional<steinlang::Parser::ParseTreeNode> parse_result =
       LexAndParse(input, steinlang::Tokenizer(), steinlang::Parser());
-  if (!parse_result.is_present()) {
+  if (!parse_result.has_value()) {
     std::cout << "failed to parse input.\n";
     return false;
   }

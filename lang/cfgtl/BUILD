@@ -23,8 +23,9 @@ cc_library(
     deps = [
         ":cardinality",
         ":cfg_types",
-        "//util:optional",
         "//util:one_of",
+        "//util:variant",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 

@@ -3,24 +3,9 @@ package(
 )
 
 cc_library(
-    name = "util",
-    hdrs = [
-        "one_of.h",
-        "optional.h",
-    ],
-)
-
-cc_library(
     name = "one_of",
     hdrs = [
         "one_of.h",
-    ],
-)
-
-cc_library(
-    name = "optional",
-    hdrs = [
-        "optional.h",
     ],
 )
 
