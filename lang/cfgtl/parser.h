@@ -130,8 +130,8 @@ struct Parser<Grammar, Expression<Term, Cardinality>> {
         auto term_or = std::move(result.value());
         // If we successfully parsed a term, add it to the results and update
         // the current iterator position.
-        if (term_or.is_present()) {
-          cur.value().push_back(std::move(term_or.mutable_value()));
+        if (term_or.has_value()) {
+          cur.value().push_back(std::move(term_or.value()));
           cur.pos = result.pos;
         } else {
           // If we didn't parse a term, we won't be updating the iterator
