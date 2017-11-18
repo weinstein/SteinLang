@@ -18,3 +18,8 @@ new_local_repository(
     path = "third_party/variant",
     build_file = "BUILD.variant",
 )
+
+local_repository(
+    name = "com_google_absl",
+    path = "third_party/absl",
+)
