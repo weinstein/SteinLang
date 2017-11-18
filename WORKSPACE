@@ -23,7 +23,13 @@ local_repository(
     path = "third_party/protobuf",
 )
 
-local_repository(
+new_local_repository(
     name = "com_mpark_variant",
     path = "third_party/variant",
+    build_file = "BUILD.variant",
+)
+
+bind(
+    name = "variant",
+    actual = "@com_mpark_variant//:variant",
 )

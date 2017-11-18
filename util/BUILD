@@ -30,7 +30,7 @@ cc_library(
         "variant.h",
     ],
     deps = [
-        "//third_party/variant",
+        "//external:variant",
     ],
 )
 
