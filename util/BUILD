@@ -30,7 +30,7 @@ cc_library(
         "variant.h",
     ],
     deps = [
-        "//external:variant",
+        "@com_mpark_variant//:variant",
     ],
 )
 
@@ -57,6 +57,6 @@ cc_binary(
         ":diff_util",
         ":file_util",
         ":util",
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )

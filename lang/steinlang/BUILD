@@ -28,8 +28,8 @@ cc_library(
     copts = ["--std=c++14"],
     deps = [
         ":steinlang_syntax_cc_proto",
-        "//external:gflags",
-        "//external:protobuf",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -42,7 +42,7 @@ cc_library(
         ":steinlang_syntax_cc_proto",
         ":memory",
         ":literal_ops",
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -52,7 +52,7 @@ cc_library(
     srcs = ["source_util.cc"],
     deps = [
         ":steinlang_syntax_cc_proto",
-        "//external:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -81,6 +81,6 @@ cc_binary(
         ":steinlang_parser",
         "//util:file_util",
         "//util:optional",
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )

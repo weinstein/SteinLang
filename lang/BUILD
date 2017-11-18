@@ -41,7 +41,7 @@ cc_binary(
     srcs = ["cfg_parser_main.cc"],
     deps = [
         ":cfg_parser",
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
         "//util:file_util",
     ],
 )
